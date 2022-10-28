@@ -5,11 +5,14 @@
 #include <DD4hep/Detector.h>
 
 #include <EVENT/Track.h>
+#include <EVENT/TrackerHit.h>
 #include <IMPL/LCCollectionVec.h>
+#include <UTIL/LCTrackerConf.h>
 
 #include <marlin/AIDAProcessor.h>
 
 #include <AIDA/ITree.h>
+
 
 FilterTracks aFilterTracks ;
 
@@ -20,6 +23,12 @@ FilterTracks::FilterTracks()
   _description = "FilterTracks processor filters a collection of tracks based on NHits and MinPt and outputs a filtered collection";
 
   // register steering parameters: name, description, class-variable, default value
+  registerProcessorParameter("BarrelOnly",
+		  	     "If true, just keep tracks with only barrel hits",
+			     _BarrelOnly,
+			     _BarrelOnly
+			      );  
+  
   registerProcessorParameter("NHitsTotal",
 		  	     "Minimum number of hits on track",
 			     _NHitsTotal,
@@ -50,11 +59,35 @@ FilterTracks::FilterTracks()
 			     _MinPt
 		 	      );
 
+  registerProcessorParameter("Chi2Spatial",
+		  	     "Spatial chi squared",
+			     _Chi2Spatial,
+			     _Chi2Spatial
+		 	      );
+
+  registerProcessorParameter("Chi2TemporalAvg",
+              "Temporal chi squared average",
+           _Chi2TemporalAvg,
+           _Chi2TemporalAvg
+            );
+
+  registerProcessorParameter("Chi2TemporalMax",
+              "Temporal chi squared maximum",
+           _Chi2TemporalMax,
+           _Chi2TemporalMax
+            );
+
+  registerProcessorParameter("Chi2TemporalStd",
+              "Temporal chi squared standard deviation",
+           _Chi2TemporalStd,
+           _Chi2TemporalStd
+            );
+
   registerInputCollection( LCIO::TRACK,
 		  	   "InTrackCollection" ,
 			   "Name of the input collection",
 			   _InTrackCollection,
-		           _InTrackCollection
+		     _InTrackCollection
 		 	    );
 
   registerOutputCollection( LCIO::TRACK,
@@ -113,11 +146,36 @@ void FilterTracks::processEvent( LCEvent * evt )
       int nhitinner = trk->getSubdetectorHitNumbers()[3]+trk->getSubdetectorHitNumbers()[4];
       int nhitouter = trk->getSubdetectorHitNumbers()[5]+trk->getSubdetectorHitNumbers()[6];
       
-      float pt=fabs(0.3*_Bz/trk->getOmega()/1000);
+      float pt = fabs(0.3*_Bz/trk->getOmega()/1000);
 
-      if(nhittotal > _NHitsTotal and nhitvertex > _NHitsVertex and nhitinner > _NHitsInner and nhitouter > _NHitsOuter and pt > _MinPt)
-	      {OutTrackCollection->addElement(trk);}
-	  }
+      float chi2spatial = trk->getChi2();
+
+      if(_BarrelOnly == true){
+        bool endcaphits = false;
+        for (int i=0; i<nhittotal; ++i)
+          {
+          //Find what subdetector the hit is on 
+          std::string _encoderString = lcio::LCTrackerCellID::encoding_string();
+          UTIL::CellIDDecoder<lcio::TrackerHit> decoder(_encoderString);
+          uint32_t systemID = decoder(trk->getTrackerHits()[i])["system"];
+          if(systemID == 2 or systemID == 4 or systemID == 6){endcaphits = true;}
+          }
+        if(endcaphits == false){OutTrackCollection->addElement(trk);}
+        }
+
+      if(_BarrelOnly == false){
+        if(nhittotal   > _NHitsTotal   and 
+          nhitvertex   > _NHitsVertex  and 
+          nhitinner    > _NHitsInner   and 
+          nhitouter    > _NHitsOuter   and 
+          pt           > _MinPt        ) 
+          //chi2spatial  > _Chi2Spatial and
+          //chi2temporalavg < _Chi2TemporalAvg and
+          //chi2temporalmax < _Chi2TemporalMax and
+          //chi2temporalstd < _Chi2TemporalStd)
+          {OutTrackCollection->addElement(trk);}
+       }
+    }
 
   // Save output track collection
   evt->addCollection(OutTrackCollection, _OutTrackCollection);  

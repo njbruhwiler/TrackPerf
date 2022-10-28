@@ -9,19 +9,20 @@ using namespace TrackPerf;
 
 TrackHists::TrackHists()
 {
-  h_pt     = new TH1F("reco_pt"     , ";Track p_{T} [GeV];Tracks [/0.1 GeV]"     , 100,  0   , 10   );
+  h_pt     = new TH1F("reco_pt"     , ";Track p_{T} [GeV];Tracks [/0.1 GeV]"     , 100,  0   , 1500   );
+  h_pt_zoom= new TH1F("reco_pt_zoom", ";Track p_{T} [GeV];Tracks [/0.1 GeV]"     , 100,  0   , 10   );
   h_lambda = new TH1F("reco_lambda" , ";Track #lambda; Tracks"                   , 100, -3.14,  3.14);
   h_phi    = new TH1F("reco_phi"    , ";Track #phi; Tracks"                      , 100, -3.14,  3.14);
   h_d0     = new TH1F("reco_d0"     , ";Track d_{0} [mm]; Tracks [/0.2 mm]"      , 100,-10   , 10   );
   h_z0     = new TH1F("reco_z0"     , ";Track z_{0} [mm]; Tracks [/0.2 mm]"      , 100,-10   , 10   );
   h_nhit   = new TH1F("reco_nhit"   , ";Track Hits; Tracks [/hit]"               , 20 ,-0.5  , 19.5 );
   h_chi2_spatial      = new TH1F("spatial_chi2"        , ";Spatial chi squared values; Tracks"            , 100,  0, 100);
-  h_chi2_temp_avg     = new TH1F("temporal_chi2_avg"   , ";Average temporal chi squared values; Tracks"   , 100,  0, 10 );
-  h_chi2_temp_max     = new TH1F("temporal_chi2_max"   , ";Max temporal chi squared values; Tracks"       , 100,  0, 10 );
-  h_chi2_temp_std     = new TH1F("temporal_chi2_std"   , ";Std dev of temporal chi squared values; Tracks", 100,  0, 10 );
-  h_chi2_temp_vtx     = new TH1F("temporal_chi2_vertex", ";Average temporal chi2 vertex detector; Tracks" , 2000, -.5, .5 );
-  h_chi2_temp_inner   = new TH1F("temporal_chi2_inner" , ";Average temporal chi2 inner tracker; Tracks"   , 2000, -.5, .5 );
-  h_chi2_temp_outer   = new TH1F("temporal_chi2_outer" , ";Average temporal chi2 outer tracker; Tracks"   , 2000, -.5, .5 ); 
+  h_chi2_temp_avg     = new TH1F("temporal_chi2_avg"   , ";Average temporal chi squared values; Tracks"   , 500,  0, 50 );
+  h_chi2_temp_max     = new TH1F("temporal_chi2_max"   , ";Max temporal chi squared values; Tracks"       , 500,  0, 50 );
+  h_chi2_temp_std     = new TH1F("temporal_chi2_std"   , ";Std dev of temporal chi squared values; Tracks", 500,  0, 50 );
+  h_chi2_temp_vtx     = new TH1F("temporal_chi2_vertex", ";Average temporal chi2 vertex detector; Tracks" , 200, -10, 10 );
+  h_chi2_temp_inner   = new TH1F("temporal_chi2_inner" , ";Average temporal chi2 inner tracker; Tracks"   , 200, -10, 10 );
+  h_chi2_temp_outer   = new TH1F("temporal_chi2_outer" , ";Average temporal chi2 outer tracker; Tracks"   , 200, -10, 10 ); 
   h_cov_d0_d0         = new TH1F("cov_d0_d0"        , ";Cov(d0, d0);Tracks"        , 100,  -1  ,  1   );
   h_cov_d0_phi        = new TH1F("cov_d0_phi"       , ";Cov(d0, phi);Tracks"       , 100,  -1  ,  1   );
   h_cov_d0_omega      = new TH1F("cov_d0_omega"     , ";Cov(d0, omega);Tracks"     , 100,  -1  ,  1   );
@@ -56,7 +57,8 @@ TrackHists::TrackHists()
 void TrackHists::fill(const EVENT::Track* track)
 {  
   float pt=fabs(0.3*_Bz/track->getOmega()/1000);
-  h_pt    ->Fill(pt);
+  h_pt     ->Fill(pt);
+  h_pt_zoom->Fill(pt);
  
   //Calculating temporal chi squared value
   float chi2_temp_sum = 0;
@@ -86,12 +88,15 @@ void TrackHists::fill(const EVENT::Track* track)
      float z_pos_1 = track->getTrackerHits()[i+1]->getPosition()[2];
 
      float delta_r = sqrt( pow((x_pos_1-x_pos_0),2) + pow((y_pos_1-y_pos_0),2) + pow((z_pos_1-z_pos_0),2) );  // units mm
-
+     
      float c = 300;  // units mm/ns  (speed of light)
+
+     //Add this factor to undo calculation done for getTime: (|x1|-|x0|)/c
+     float correction = (sqrt( pow(x_pos_1,2) + pow(y_pos_1,2) + pow(z_pos_1,2) ) - sqrt( pow(x_pos_0,2) + pow(y_pos_0,2) + pow (x_pos_0,2) )) / c;
 
      float expected_time = delta_r/c;  //units nanoseconds
      float observed_time = time_1 - time_0;  // units nanoseconds
-     float chi2_temp = observed_time - expected_time;
+     float chi2_temp = observed_time - expected_time + correction;
      chi2_temp_values.push_back(pow(chi2_temp,2));
      chi2_temp_sum += pow(chi2_temp,2);
 
@@ -109,15 +114,16 @@ void TrackHists::fill(const EVENT::Track* track)
          if(layerID == 0){nhits_24_2 += 1;}
          if(layerID == 1){nhits_24_4 += 1;}
          if(layerID == 2){nhits_24_6 += 1;}
-         if(fabs(chi2_temp) >= 0.5){
-          std::cout << "\ntime 0: " << track->getTrackerHits()[i]->getTime();
+         if(fabs(chi2_temp) <= 0.001){
+          std::cout << "\ntime 0: " << track->getTrackerHits()[i]->getTime() + sqrt( pow(x_pos_0,2) + pow(y_pos_0,2) + pow(z_pos_0,2) )/c;
           std::cout << "\nx pos 0: " << track->getTrackerHits()[i]->getPosition()[0];
           std::cout << "\ny pos 0: " << track->getTrackerHits()[i]->getPosition()[1];
           std::cout << "\nz pos 0: " << track->getTrackerHits()[i]->getPosition()[2];
-          std::cout << "\ntime 1: " << track->getTrackerHits()[i+1]->getTime();
+          std::cout << "\ntime 1: " << track->getTrackerHits()[i+1]->getTime() + sqrt( pow(x_pos_1,2) + pow(y_pos_1,2) + pow(z_pos_1,2) )/c;
           std::cout << "\nx pos 1: " << track->getTrackerHits()[i+1]->getPosition()[0];
           std::cout << "\ny pos 1: " << track->getTrackerHits()[i+1]->getPosition()[1];
           std::cout << "\nz pos 1: " << track->getTrackerHits()[i+1]->getPosition()[2];
+          std::cout << "\nchi2: "   << chi2_temp;
           }
         }}}
   
@@ -137,7 +143,7 @@ void TrackHists::fill(const EVENT::Track* track)
   h_d0     ->Fill(track->getD0());
   h_z0     ->Fill(track->getZ0());
   if (pt < 2){h_low_pt_lambda ->Fill(lambda);}
-  h_chi2_spatial->Fill(track->getChi2());
+  h_chi2_spatial->Fill(track->getChi2()/(track->getNdf()));
 
   h_nhit   ->Fill(nhits);
 

@@ -3,6 +3,7 @@
 #include <marlin/Processor.h>
 
 #include <TH1.h>
+#include <TH2.h>
 
 namespace TrackPerf
 {
@@ -40,6 +41,11 @@ public:
    */
   virtual void end() ;  
 
+protected:
+
+  //virtual void FindLocalPosition( const EVENT::TrackerHit* hit, double *localPosition, double *localDirection);
+
+
 private:
   //! Track Collection
   std::string _trkColName {};
@@ -49,6 +55,14 @@ private:
 
   //! Track to MC truth match collection
   std::string _trkMatchColName {};
+
+  //! Tracker hit collections
+  std::string _vbtrkhitColName {};
+  std::string _ibtrkhitColName {};
+  std::string _obtrkhitColName {};
+  std::string _vetrkhitColName {};
+  std::string _ietrkhitColName {};
+  std::string _oetrkhitColName {};
 
   //! Determination of good vs bad match
   float _matchProb = 0.5;
@@ -64,4 +78,8 @@ private:
 
   TH1 * h_number_of_fakes;
   TH1 * h_number_of_tracks;
+  TH1 * h_relation_weight_real;
+  TH1 * h_relation_weight_fake;
+  TH1 * h_trackerhit_timing;
+  TH2 * h_size_theta;
 };
