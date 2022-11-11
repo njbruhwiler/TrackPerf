@@ -13,6 +13,7 @@
 #include <EVENT/Track.h>
 #include <EVENT/TrackerHit.h>
 #include <EVENT/SimTrackerHit.h>
+#include <UTIL/LCTrackerConf.h>
 
 #include <marlin/AIDAProcessor.h>
 
@@ -123,7 +124,13 @@ void TrackPerfHistProc::init()
   tree->mkdir("../unmt"); tree->cd("../unmt");
   _unmtTruths=std::make_shared<TrackPerf::TruthHists>(); 
   tree->mkdir("../clusters" ); tree->cd("../clusters" );
-  h_size_theta = new TH2F("cluster_size_vs_theta" , ";Track #theta; Cluster size" , 100, -3.14,  3.14,  20,  -0.5,  19.5  ); 
+  h_size_theta = new TH2F("cluster_size_vs_theta" , ";Cluster #theta; Cluster size" , 100, -3.14,  3.14,  20,  -0.5,  19.5  ); 
+  h_cluster_pos = new TH2F("cluster_position", ";z; r" , 100, -500, 500, 100, 0, 200);
+  h_cluster_pos_0 = new TH2F("cluster_position_0", ";z; r" , 100, -500, 500, 100, 0, 200);
+  h_cluster_pos_1 = new TH2F("cluster_position_1", ";z; r" , 100, -500, 500, 100, 0, 200);
+  h_cluster_pos_2 = new TH2F("cluster_position_2", ";z; r" , 100, -500, 500, 100, 0, 200);
+  h_cluster_pos_3 = new TH2F("cluster_position_3", ";z; r" , 100, -500, 500, 100, 0, 200);
+
 }
 
 void TrackPerfHistProc::processRunHeader( LCRunHeader* /*run*/)
@@ -160,7 +167,8 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
       const double* mom=mcp->getMomentum();
       double pt=std::sqrt(std::pow(mom[0],2)+std::pow(mom[1],2));
       double lambda=std::atan2(mom[2],pt);
-      if(fabs(lambda)>75./180*3.14)
+      //if(fabs(lambda)>75./180*3.14)
+      if(fabs(lambda)>0.8)
 	{ continue; }
 
       mcpSet.insert(mcp);
@@ -178,6 +186,10 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
   for(uint32_t i=0;i<trkCol->getNumberOfElements();i++)
     {
       const EVENT::Track *trk=static_cast<const EVENT::Track*>(trkCol->getElementAt(i));
+      
+      float lambda=std::atan(trk->getTanLambda());
+      if(fabs(lambda)>0.8)
+      {continue;}
 
       trkSet.insert(trk);
       _allTracks->fill(trk);
@@ -229,18 +241,39 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
       for (size_t j=0; j<rawHits.size(); ++j) {
         lcio::SimTrackerHit *hitConstituent = dynamic_cast<lcio::SimTrackerHit*>( rawHits[j] );
         const double *localPos = hitConstituent->getPosition();
-        x = localPos[0];
-        y = localPos[1];
-        if (y < min){
-          min = y;
+        float x_local = localPos[0];
+        float y_local = localPos[1];
+        if (y_local < min){
+          min = y_local;
         }
-        else if (y > max){
-          max = y;          
+        else if (y_local > max){
+          max = y_local;          
         }
       }
       float cluster_size = (max - min)+1;
+
+      //Get hit subdetector/layer 
+      std::string _encoderString = lcio::LCTrackerCellID::encoding_string();
+      UTIL::CellIDDecoder<lcio::TrackerHit> decoder(_encoderString);
+      uint32_t systemID = decoder(trkhit)["system"];
+      uint32_t layerID = decoder(trkhit)["layer"];
       
-      h_size_theta->Fill(incidentTheta, cluster_size);}
+      h_size_theta->Fill(incidentTheta, cluster_size);
+      h_cluster_pos->Fill(z,r);
+      if(layerID==0 or layerID==1){
+        h_cluster_pos_0->Fill(z,r);
+      }
+      if(layerID==2 or layerID==3){
+        h_cluster_pos_1->Fill(z,r);
+      }
+      if(layerID==4 or layerID==5){
+        h_cluster_pos_2->Fill(z,r);
+      }
+      if(layerID==6 or layerID==7){
+        h_cluster_pos_3->Fill(z,r);
+      }
+      }
+
   for(int i=0; i<ibtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(ibtrkhitCol->getElementAt(i));

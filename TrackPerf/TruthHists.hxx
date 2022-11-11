@@ -24,7 +24,6 @@ namespace TrackPerf
 
   private:
     //! Reconstructed track pT
-    TH1* h_pt_zoom;
     TH1* h_pt;
     TH1* h_lambda;
     TH1* h_phi;

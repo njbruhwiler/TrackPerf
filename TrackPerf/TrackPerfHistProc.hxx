@@ -82,4 +82,9 @@ private:
   TH1 * h_relation_weight_fake;
   TH1 * h_trackerhit_timing;
   TH2 * h_size_theta;
+  TH2 * h_cluster_pos;
+  TH2 * h_cluster_pos_0;
+  TH2 * h_cluster_pos_1;
+  TH2 * h_cluster_pos_2;
+  TH2 * h_cluster_pos_3;
 };

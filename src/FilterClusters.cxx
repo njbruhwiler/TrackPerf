@@ -14,6 +14,8 @@
 
 #include <AIDA/ITree.h>
 
+#include "marlin/VerbosityLevels.h"
+
 
 FilterClusters aFilterClusters ;
 
@@ -34,7 +36,11 @@ FilterClusters::FilterClusters()
 			   _ClusterSize,
 			   {}
 			    );  
-
+  registerProcessorParameter("Layers",
+		  	 "Layers to be filtered",
+			   _Layers,
+			   {}
+			    );  
   registerInputCollection( LCIO::TRACKERHIT,
 		  	 "InTrackerHitCollection" ,
 			   "Name of the input tracker hit collection",
@@ -99,7 +105,7 @@ void FilterClusters::processEvent( LCEvent * evt )
       EVENT::TrackerHit *trkhit=static_cast<EVENT::TrackerHit*>(InTrackerHitCollection->getElementAt(i));
       EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(InRelationCollection->getElementAt(i));
 
-      //Calculating theta (or lambda??)
+      //Calculating theta 
       float x = trkhit->getPosition()[0];
       float y = trkhit->getPosition()[1];
       float z = trkhit->getPosition()[2];
@@ -125,26 +131,42 @@ void FilterClusters::processEvent( LCEvent * evt )
         }
       }
       float cluster_size = (max - min)+1;
+
+      //Get hit subdetector/layer 
+      std::string _encoderString = lcio::LCTrackerCellID::encoding_string();
+      UTIL::CellIDDecoder<lcio::TrackerHit> decoder(_encoderString);
+      uint32_t systemID = decoder(trkhit)["system"];
+      uint32_t layerID = decoder(trkhit)["layer"];
+      bool filter_layer = false;
+      for (int i=0; i<_Layers.size(); ++i){
+        if (layerID == std::stof(_Layers[i])) {
+          filter_layer = true;
+        }
+      }
       
       for (int i=0; i<_ThetaRanges.size()-1; ++i) {
-        //std::cout << "theta: " << incidentTheta << std::endl;
+        streamlog_out( DEBUG0 ) << "theta: " << incidentTheta << std::endl;
         float min = std::stof(_ThetaRanges[i]);
         float max = std::stof(_ThetaRanges[i+1]);
-        //std::cout << "theta range: " << min << ", " << max << std::endl;
-        if(incidentTheta > min and incidentTheta <= max){
-          //std::cout << "theta in range" << std::endl;
-          //std::cout << "cluster size cut off: " << _ClusterSize[i] << std::endl;
-          //std::cout << "cluster size: " << cluster_size << std::endl;}
+        streamlog_out( DEBUG0 ) << "theta range: " << min << ", " << max << std::endl;
+        if(incidentTheta > min and incidentTheta <= max and filter_layer){
+          streamlog_out( DEBUG0 ) << "theta in range" << std::endl;
+          streamlog_out( DEBUG0 ) << "cluster size cut off: " << _ClusterSize[i] << std::endl;
+          streamlog_out( DEBUG0 ) << "cluster size: " << cluster_size << std::endl;
           if(cluster_size < std::stof(_ClusterSize[i])) {
-            //std::cout << "cluster added" << std::endl;
+            streamlog_out( DEBUG0 ) << "cluster added" << std::endl;
             OutTrackerHitCollection->addElement(trkhit); 
-            OutRelationCollection->addElement(rel); 
+            OutRelationCollection->addElement(rel); }
           else {
-            //std::cout << "cluster rejected" << std::endl;
+            streamlog_out( DEBUG0 ) << "cluster rejected" << std::endl;
           }
         }
+        if(not filter_layer){
+          OutTrackerHitCollection->addElement(trkhit); 
+          OutRelationCollection->addElement(rel); 
+        }
         else{
-          //std::cout << "theta out of range" << std::endl;
+          streamlog_out( DEBUG0 ) << "theta out of range" << std::endl;
         }
       }
     }

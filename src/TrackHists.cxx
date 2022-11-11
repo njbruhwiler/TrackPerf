@@ -9,8 +9,7 @@ using namespace TrackPerf;
 
 TrackHists::TrackHists()
 {
-  h_pt     = new TH1F("reco_pt"     , ";Track p_{T} [GeV];Tracks [/0.1 GeV]"     , 100,  0   , 1500   );
-  h_pt_zoom= new TH1F("reco_pt_zoom", ";Track p_{T} [GeV];Tracks [/0.1 GeV]"     , 100,  0   , 10   );
+  h_pt     = new TH1F("reco_pt"     , ";Track p_{T} [GeV];Tracks [/0.1 GeV]"     , 100,  0   , 10   );
   h_lambda = new TH1F("reco_lambda" , ";Track #lambda; Tracks"                   , 100, -3.14,  3.14);
   h_phi    = new TH1F("reco_phi"    , ";Track #phi; Tracks"                      , 100, -3.14,  3.14);
   h_d0     = new TH1F("reco_d0"     , ";Track d_{0} [mm]; Tracks [/0.2 mm]"      , 100,-10   , 10   );
@@ -58,7 +57,6 @@ void TrackHists::fill(const EVENT::Track* track)
 {  
   float pt=fabs(0.3*_Bz/track->getOmega()/1000);
   h_pt     ->Fill(pt);
-  h_pt_zoom->Fill(pt);
  
   //Calculating temporal chi squared value
   float chi2_temp_sum = 0;
@@ -114,18 +112,8 @@ void TrackHists::fill(const EVENT::Track* track)
          if(layerID == 0){nhits_24_2 += 1;}
          if(layerID == 1){nhits_24_4 += 1;}
          if(layerID == 2){nhits_24_6 += 1;}
-         if(fabs(chi2_temp) <= 0.001){
-          std::cout << "\ntime 0: " << track->getTrackerHits()[i]->getTime() + sqrt( pow(x_pos_0,2) + pow(y_pos_0,2) + pow(z_pos_0,2) )/c;
-          std::cout << "\nx pos 0: " << track->getTrackerHits()[i]->getPosition()[0];
-          std::cout << "\ny pos 0: " << track->getTrackerHits()[i]->getPosition()[1];
-          std::cout << "\nz pos 0: " << track->getTrackerHits()[i]->getPosition()[2];
-          std::cout << "\ntime 1: " << track->getTrackerHits()[i+1]->getTime() + sqrt( pow(x_pos_1,2) + pow(y_pos_1,2) + pow(z_pos_1,2) )/c;
-          std::cout << "\nx pos 1: " << track->getTrackerHits()[i+1]->getPosition()[0];
-          std::cout << "\ny pos 1: " << track->getTrackerHits()[i+1]->getPosition()[1];
-          std::cout << "\nz pos 1: " << track->getTrackerHits()[i+1]->getPosition()[2];
-          std::cout << "\nchi2: "   << chi2_temp;
           }
-        }}}
+        }}
   
   float chi2_temp_avg = chi2_temp_sum / (nhits-1);
   float chi2_temp_std = sqrt(fabs(chi2_temp_sum/nhits - pow(chi2_temp_avg,2)));

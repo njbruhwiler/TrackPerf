@@ -3,6 +3,7 @@
 #include <marlin/Processor.h>
 
 #include "../ACTSTracking/ACTSTracking/GeometryIdMappingTool.hxx"
+
 namespace TrackPerf
 {
 }
@@ -48,5 +49,8 @@ private:
 
    //! Cut-offs for cluster size in various theta ranges
    std::vector<std::string> _ClusterSize;
+
+   //! Layers to be filtered
+   std::vector<std::string> _Layers;
 
 };
