@@ -1,11 +1,11 @@
-#include "TrackPerf/ResoHists.hxx"
+#include "TrackPerf/TrackResoHists.hxx"
 
 #include <EVENT/Track.h>
 #include <EVENT/MCParticle.h>
 
 using namespace TrackPerf;
 
-ResoHists::ResoHists()
+TrackResoHists::TrackResoHists()
 {
   h_track_truth_pt       = new TH2F("track_vs_truth_pt" , ";Track p_{T} [GeV];Truth p_{T} [GeV]" , 100, 0, 10, 100, 0, 10  );
   h_reso_pt_rel          = new TH1F("reso_pt"       , ";(truth pt - track pt)/truth pt;Tracks", 100, -1, 1);
@@ -13,7 +13,7 @@ ResoHists::ResoHists()
   h_reso_phi             = new TH1F("reso_phi"      , ";truth phi - track phi;Tracks"         , 100, -1, 1);
 }
 
-void ResoHists::fill(const EVENT::Track* track, const EVENT::MCParticle* particle)
+void TrackResoHists::fill(const EVENT::Track* track, const EVENT::MCParticle* particle)
 {
   float track_pt=fabs(0.3*_Bz/track->getOmega()/1000);
   float track_lambda=std::atan(track->getTanLambda());

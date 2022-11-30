@@ -9,7 +9,9 @@ namespace TrackPerf
 {
   class TrackHists;
   class TruthHists;
-  class ResoHists;
+  class TrackResoHists;
+  class TrackerHitResoHists;
+  class ClusterHists;
 }
 
 //! Creates a simple column wise ntuple in a HistProc from LCIO collections.
@@ -64,6 +66,9 @@ private:
   std::string _ietrkhitColName {};
   std::string _oetrkhitColName {};
 
+  //! Tracker hit relation collection
+  std::string _VBRelationCollection {};
+
   //! Determination of good vs bad match
   float _matchProb = 0.5;
   
@@ -74,17 +79,13 @@ private:
   std::shared_ptr<TrackPerf::TruthHists> _allTruths ;
   std::shared_ptr<TrackPerf::TruthHists> _realTruths;
   std::shared_ptr<TrackPerf::TruthHists> _unmtTruths;
-  std::shared_ptr<TrackPerf::ResoHists> _realReso;
+  std::shared_ptr<TrackPerf::TrackResoHists> _realReso;
+  std::shared_ptr<TrackPerf::TrackerHitResoHists> _uncertainties;
+  std::shared_ptr<TrackPerf::ClusterHists> _clusters;
 
   TH1 * h_number_of_fakes;
   TH1 * h_number_of_tracks;
   TH1 * h_relation_weight_real;
   TH1 * h_relation_weight_fake;
   TH1 * h_trackerhit_timing;
-  TH2 * h_size_theta;
-  TH2 * h_cluster_pos;
-  TH2 * h_cluster_pos_0;
-  TH2 * h_cluster_pos_1;
-  TH2 * h_cluster_pos_2;
-  TH2 * h_cluster_pos_3;
 };

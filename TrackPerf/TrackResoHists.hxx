@@ -13,14 +13,14 @@ namespace EVENT
 namespace TrackPerf
 {
   //! Histograms for reconstructed tracks
-  class ResoHists
+  class TrackResoHists
   {
   public:
-    ResoHists(const ResoHists &) = delete ;
-    ResoHists& operator =(const ResoHists &) = delete ;
+    TrackResoHists(const TrackResoHists &) = delete ;
+    TrackResoHists& operator =(const TrackResoHists &) = delete ;
 
     //! Initialize empty histograms
-    ResoHists() ;
+    TrackResoHists() ;
 
     // Fill histograms with a single track
     void fill(const EVENT::Track* track, const EVENT::MCParticle* particle);

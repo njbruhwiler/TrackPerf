@@ -2,7 +2,9 @@
 
 #include "TrackPerf/TrackHists.hxx"
 #include "TrackPerf/TruthHists.hxx"
-#include "TrackPerf/ResoHists.hxx"
+#include "TrackPerf/TrackResoHists.hxx"
+#include "TrackPerf/TrackerHitResoHists.hxx"
+#include "TrackPerf/ClusterHists.hxx"
 
 #include <set>
 
@@ -13,7 +15,8 @@
 #include <EVENT/Track.h>
 #include <EVENT/TrackerHit.h>
 #include <EVENT/SimTrackerHit.h>
-#include <UTIL/LCTrackerConf.h>
+#include <EVENT/TrackerHitPlane.h>
+#include <IMPL/TrackerHitPlaneImpl.h>
 
 #include <marlin/AIDAProcessor.h>
 
@@ -95,6 +98,13 @@ TrackPerfHistProc::TrackPerfHistProc()
 			   _oetrkhitColName,
 			   _oetrkhitColName
 			   );  
+
+  registerInputCollection( LCIO::LCRELATION,
+		     "VBRelationCollection" ,
+			   "Name of the input relation collection",
+			   _VBRelationCollection,
+		     _VBRelationCollection
+		 	    );
 }
 
 void TrackPerfHistProc::init()
@@ -115,7 +125,7 @@ void TrackPerfHistProc::init()
   tree->mkdir("../real"); tree->cd("../real");
   _realTracks=std::make_shared<TrackPerf::TrackHists>();
   _realTruths=std::make_shared<TrackPerf::TruthHists>();
-  _realReso    =std::make_shared<TrackPerf::ResoHists>();
+  _realReso    =std::make_shared<TrackPerf::TrackResoHists>();
   h_relation_weight_real = new TH1F("relation_weight", ";Track-truth relation weight;", 100, 0, 2);
   tree->mkdir("../fake"); tree->cd("../fake");
   _fakeTracks=std::make_shared<TrackPerf::TrackHists>();
@@ -124,12 +134,8 @@ void TrackPerfHistProc::init()
   tree->mkdir("../unmt"); tree->cd("../unmt");
   _unmtTruths=std::make_shared<TrackPerf::TruthHists>(); 
   tree->mkdir("../clusters" ); tree->cd("../clusters" );
-  h_size_theta = new TH2F("cluster_size_vs_theta" , ";Cluster #theta; Cluster size" , 100, -3.14,  3.14,  20,  -0.5,  19.5  ); 
-  h_cluster_pos = new TH2F("cluster_position", ";z; r" , 100, -500, 500, 100, 0, 200);
-  h_cluster_pos_0 = new TH2F("cluster_position_0", ";z; r" , 100, -500, 500, 100, 0, 200);
-  h_cluster_pos_1 = new TH2F("cluster_position_1", ";z; r" , 100, -500, 500, 100, 0, 200);
-  h_cluster_pos_2 = new TH2F("cluster_position_2", ";z; r" , 100, -500, 500, 100, 0, 200);
-  h_cluster_pos_3 = new TH2F("cluster_position_3", ";z; r" , 100, -500, 500, 100, 0, 200);
+  _uncertainties=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _clusters=std::make_shared<TrackPerf::ClusterHists>();
 
 }
 
@@ -219,61 +225,32 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
   LCCollection* vetrkhitCol  =evt->getCollection(_vetrkhitColName);
   LCCollection* ietrkhitCol  =evt->getCollection(_ietrkhitColName);
   LCCollection* oetrkhitCol  =evt->getCollection(_oetrkhitColName);
+  LCCollection* VBRelationCollection =evt->getCollection(_VBRelationCollection);
+
+  for(int i=0; i<VBRelationCollection->getNumberOfElements(); ++i)
+    {
+      EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(VBRelationCollection->getElementAt(i));
+      EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
+      EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
+
+      IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
+
+      if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
+        std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
+        std::cout << "- Trackhit: " << trkhit << std::endl;
+        std::cout << "- Simtrackhit: " << simtrkhit << std::endl;
+        std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
+        continue;
+      }
+
+      _uncertainties->fill(trkhit,simtrkhit,trkhitplane);
+    }
 
   for(int i=0; i<vbtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(vbtrkhitCol->getElementAt(i));
       h_trackerhit_timing -> Fill(trkhit->getTime());
-
-      //Calculating theta
-      float x = trkhit->getPosition()[0];
-      float y = trkhit->getPosition()[1];
-      float z = trkhit->getPosition()[2];
-      float r = sqrt(pow(x,2)+pow(y,2));
-      float incidentTheta = std::atan(r/z);
-      if(incidentTheta<0)
-        incidentTheta += M_PI;
-
-      //Calculating cluster size
-      const lcio::LCObjectVec &rawHits = trkhit->getRawHits();
-      float max = -1000000;
-      float min = 1000000;
-      for (size_t j=0; j<rawHits.size(); ++j) {
-        lcio::SimTrackerHit *hitConstituent = dynamic_cast<lcio::SimTrackerHit*>( rawHits[j] );
-        const double *localPos = hitConstituent->getPosition();
-        float x_local = localPos[0];
-        float y_local = localPos[1];
-        if (y_local < min){
-          min = y_local;
-        }
-        else if (y_local > max){
-          max = y_local;          
-        }
-      }
-      float cluster_size = (max - min)+1;
-
-      //Get hit subdetector/layer 
-      std::string _encoderString = lcio::LCTrackerCellID::encoding_string();
-      UTIL::CellIDDecoder<lcio::TrackerHit> decoder(_encoderString);
-      uint32_t systemID = decoder(trkhit)["system"];
-      uint32_t layerID = decoder(trkhit)["layer"];
-      
-      h_size_theta->Fill(incidentTheta, cluster_size);
-      h_cluster_pos->Fill(z,r);
-      if(layerID==0 or layerID==1){
-        h_cluster_pos_0->Fill(z,r);
-      }
-      if(layerID==2 or layerID==3){
-        h_cluster_pos_1->Fill(z,r);
-      }
-      if(layerID==4 or layerID==5){
-        h_cluster_pos_2->Fill(z,r);
-      }
-      if(layerID==6 or layerID==7){
-        h_cluster_pos_3->Fill(z,r);
-      }
-      }
-
+      _clusters->fill(trkhit);}
   for(int i=0; i<ibtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(ibtrkhitCol->getElementAt(i));

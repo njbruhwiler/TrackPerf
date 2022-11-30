@@ -55,7 +55,9 @@ ADD_LIBRARY(TrackPerf SHARED
   ./src/TruthHists.cxx
   ./src/FilterTracks.cxx
   ./src/FilterClusters.cxx
-  ./src/ResoHists.cxx
+  ./src/TrackResoHists.cxx
+  ./src/TrackerHitResoHists.cxx
+  ./src/ClusterHists.cxx
   )
 TARGET_INCLUDE_DIRECTORIES(TrackPerf
   PUBLIC
