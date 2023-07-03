@@ -2,7 +2,7 @@
 
 #include <TH2.h>
 
-#include "../ACTSTracking/ACTSTracking/GeometryIdMappingTool.hxx"
+#include "/global/homes/s/sellgren/ACTSTracking/ACTSTracking/GeometryIdMappingTool.hxx"
 
 namespace EVENT
 {

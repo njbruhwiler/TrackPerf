@@ -1,4 +1,9 @@
 #include "TrackPerf/ClusterHists.hxx"
+#include <iostream>
+#include "marlin/VerbosityLevels.h"
+
+#include <stdlib.h> // basic c++ libs i'll use to try figuring out what's going on
+
 
 #include <EVENT/TrackerHit.h>
 #include <EVENT/SimTrackerHit.h>
@@ -10,7 +15,7 @@ using namespace TrackPerf;
 
 ClusterHists::ClusterHists()
 {
-  h_size_theta    = new TH2F("cluster_size_vs_theta" , ";Cluster #theta; Cluster size" , 100, -3.14,  3.14,  20,  -0.5,  19.5  ); 
+  h_size_theta    = new TH2F("cluster_size_vs_theta" , ";Cluster #theta; Cluster size" , 100, -3.14,  3.14,  20,  -0.5,  19.5  );
   h_cluster_pos   = new TH2F("cluster_position"      , ";z; r"                         , 100, -500, 500, 100, 0, 200);
   h_cluster_pos_0 = new TH2F("cluster_position_0"    , ";z; r"                         , 100, -500, 500, 100, 0, 200);
   h_cluster_pos_1 = new TH2F("cluster_position_1"    , ";z; r"                         , 100, -500, 500, 100, 0, 200);
@@ -26,34 +31,59 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
   float z = trkhit->getPosition()[2];
   float r = sqrt(pow(x,2)+pow(y,2));
   float incidentTheta = std::atan(r/z);
+  streamlog_out(MESSAGE) << "the value of theta before negative adjustment is " << incidentTheta << std::endl; // try debug message with streamlog_out
+  std::cout << "the value of theta before negative adjustment is " << incidentTheta << std::endl;  // try with classic cout print strategy
+
   if(incidentTheta<0)
     incidentTheta += M_PI;
+  streamlog_out(MESSAGE) << "the value of theta is " << incidentTheta << std::endl;
+  std::cout << "the value of theta is " << incidentTheta << std::endl;
 
   //Calculating cluster size
-  const lcio::LCObjectVec &rawHits = trkhit->getRawHits();
+  const lcio::LCObjectVec &rawHits = trkhit->getRawHits(); // uses the getRawHits() class function of the TrackerHit class to get an LCObjectVec object with the raw hit info
+  int type = trkhit->getType();
+  streamlog_out(MESSAGE) << "the type of the raw data hits are: " << type << std::endl;
   float max = -1000000;
   float min = 1000000;
-  for (size_t j=0; j<rawHits.size(); ++j) {
+
+  float loopsize = rawHits.size();
+
+  streamlog_out(MESSAGE) << "the size of rawhits is " << loopsize << std::endl;
+  for (size_t j=0; j<loopsize; ++j) {
+    streamlog_out(MESSAGE) << "the for loop is on iteration" << j << std::endl;
     lcio::SimTrackerHit *hitConstituent = dynamic_cast<lcio::SimTrackerHit*>( rawHits[j] );
     const double *localPos = hitConstituent->getPosition();
     float x_local = localPos[0];
     float y_local = localPos[1];
+    streamlog_out(MESSAGE) << "y_local is: " << y_local << std::endl;
     if (y_local < min){
       min = y_local;
       }
     else if (y_local > max){
       max = y_local;          
-      }
+      } 
+    streamlog_out(MESSAGE) << "the value of min is " << min << " and the value of max is " << max << std::endl;
+      std::cout << "the value of min is " << min << " and the value of max is " << max << std::endl;
     }
+  streamlog_out(MESSAGE) << "the value of min and max are: " << min  << " and " << max << std::endl;
   float cluster_size = (max - min)+1;
+  streamlog_out(MESSAGE) << "the value of cluster size is " << cluster_size << std::endl;
+  std::cout << "the value of cluster size is " << cluster_size << std::endl;
 
   //Get hit subdetector/layer 
   std::string _encoderString = lcio::LCTrackerCellID::encoding_string();
   UTIL::CellIDDecoder<lcio::TrackerHit> decoder(_encoderString);
   uint32_t systemID = decoder(trkhit)["system"];
   uint32_t layerID = decoder(trkhit)["layer"];
-      
+
+  // set a fake cluster size value to see if that's the issue
+  // cluster_size = rand() % 10 + 1;   
+  // set a fake theta to see if that's the issue
+  // incidentTheta = rand() % 3;
+  // make two set variables to fill in an example histogram
+
   h_size_theta->Fill(incidentTheta, cluster_size);
+
   h_cluster_pos->Fill(z,r);
   if(layerID==0 or layerID==1){
     h_cluster_pos_0->Fill(z,r);
