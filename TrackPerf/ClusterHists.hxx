@@ -1,6 +1,7 @@
 #pragma once
 
 #include <TH2.h>
+#include <TH1.h>
 
 #include "/global/homes/s/sellgren/ACTSTracking/ACTSTracking/GeometryIdMappingTool.hxx"
 
@@ -31,5 +32,6 @@ namespace TrackPerf
     TH2* h_cluster_pos_1;
     TH2* h_cluster_pos_2;
     TH2* h_cluster_pos_3;
+    TH1* hits_by_layer;
   };
 }
