@@ -1,5 +1,4 @@
 #include "TrackPerf/ClusterHists.hxx"
-#include <iostream>
 #include "marlin/VerbosityLevels.h"
 
 #include <EVENT/TrackerHit.h>
@@ -29,7 +28,7 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
   float z = trkhit->getPosition()[2];
   float r = sqrt(pow(x,2)+pow(y,2));
   float incidentTheta = std::atan(r/z);
-  streamlog_out(DEBUG9) << "the value of theta before negative adjustment is " << incidentTheta << std::endl;
+  streamlog_out(DEBUG9) << "theta before negative correction: " << incidentTheta << std::endl;
 
   if(incidentTheta<0)
     incidentTheta += M_PI;
@@ -37,14 +36,12 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
 
   //Calculating cluster size
   const lcio::LCObjectVec &rawHits = trkhit->getRawHits(); 
-  int type = trkhit->getType();
-  streamlog_out(DEBUG9) << "the type of the raw data hits are: " << type << std::endl;
   float max = -1000000;
   float min = 1000000; 
 
   float loopsize = rawHits.size();
-
   streamlog_out(DEBUG9) << "the size of rawhits is " << loopsize << std::endl;
+
   for (size_t j=0; j<loopsize; ++j) {
     streamlog_out(DEBUG9) << "the for loop is on iteration" << j << std::endl;
     lcio::SimTrackerHit *hitConstituent = dynamic_cast<lcio::SimTrackerHit*>( rawHits[j] );
@@ -58,7 +55,6 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
     else if (y_local > max){
       max = y_local;          
       } 
-    streamlog_out(DEBUG9) << "the value of min is " << min << " and the value of max is " << max << std::endl;
     }
   streamlog_out(DEBUG9) << "the value of min and max are: " << min  << " and " << max << std::endl;
   float cluster_size = (max - min)+1;
@@ -72,14 +68,8 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
 
 
 
-  // set a fake cluster size value to see if that's the issue
-  // cluster_size = rand() % 10 + 1;   
-  // set a fake theta to see if that's the issue
-  // incidentTheta = rand() % 3;
-  // make two set variables to fill in an example histogram
-
   h_size_theta->Fill(incidentTheta, cluster_size);
-
+  
   h_cluster_pos->Fill(z,r);
   if(layerID==0 or layerID==1){
     h_cluster_pos_0->Fill(z,r);

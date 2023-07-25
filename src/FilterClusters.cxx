@@ -16,8 +16,6 @@
 
 #include "marlin/VerbosityLevels.h"
 
-#include <iostream>
-
 
 FilterClusters aFilterClusters ;
 
@@ -111,7 +109,6 @@ void FilterClusters::processEvent( LCEvent * evt )
       EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(InRelationCollection->getElementAt(i));
       
       //Calculating theta 
-      // the TrackerHitPlane class inherits getPosition function from the base class TrackerHit,
       float x = trkhit->getPosition()[0];
       float y = trkhit->getPosition()[1];
       float z = trkhit->getPosition()[2];
@@ -158,7 +155,7 @@ void FilterClusters::processEvent( LCEvent * evt )
         float max = std::stof(_ThetaRanges[i+1]);
         streamlog_out( DEBUG0 ) << "theta range: " << min << ", " << max << std::endl;
 
-        if(incidentTheta > min and incidentTheta <= max and not filter_layer){ //removed text "and filter_layer"
+        if(incidentTheta > min and incidentTheta <= max and not filter_layer){
           streamlog_out( DEBUG0 ) << "theta in range" << std::endl;
           streamlog_out( DEBUG0 ) << "cluster size cut off: " << _ClusterSize[i] << std::endl;
           streamlog_out( DEBUG0 ) << "cluster size: " << cluster_size << std::endl;
@@ -170,10 +167,6 @@ void FilterClusters::processEvent( LCEvent * evt )
             streamlog_out( DEBUG0 ) << "cluster rejected" << std::endl;
           }
         }
-        /* if(not filter_layer){
-          OutTrackerHitCollection->addElement(trkhit); 
-          OutRelationCollection->addElement(rel); 
-        } */
         else{
           streamlog_out( DEBUG0 ) << "theta out of range or layer filtered" << std::endl;
         }
