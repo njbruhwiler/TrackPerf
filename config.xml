@@ -22,7 +22,7 @@
 
 
     <!-- ==========  Overlay  ========== -->
-    <processor name="OverlayBIB"/> 
+    <processor name="OverlayFull"/>
 
     <!-- ==========  Tracker Digitization  ========== -->
     <processor name="VXDBarrelRealisticDigi"/> 
@@ -38,14 +38,14 @@
 
 
     <!-- ==========  Tracking  ========== -->
-    <!--
+    
     <processor name="MyCKFTracking"/>
     <processor name="MyTrackDeduper"/>
-    <processor name="MyTrackFilter"/> -->
+    <processor name="MyTrackFilter"/>
     
     <!-- ==========  Track Perf  ========== --> 
     <!-- <processor name="MyTrackTruth" /> -->
-    <!-- <processor name="MyTrackPerf_notracks" /> -->
+    <!-- <processor name="MyTrackPerf" /> --> 
 
     <!-- ==========  Output  ========== -->
     <processor name="MyLCTuple" />
@@ -89,7 +89,7 @@
     <!-- compression of output file 0: false >0: true (default) -->
     <parameter name="Compress" type="int" value="1"/>
     <!-- filename without extension-->
-    <parameter name="FileName" type="string" value="histograms_throwaway_notracknoperf_3events"/>
+    <parameter name="FileName" type="string" value="histograms_throwaway_nofilter_1e_9pstiming_newbib"/>
     <!-- type of output file xml (default) or root ( only OpenScientist)-->
     <parameter name="FileType" type="string" value="root "/>
   </processor>
@@ -103,7 +103,7 @@
 
   <global>
     <parameter name="LCIOInputFiles">
-      /global/cfs/cdirs/atlas/sellgren/MuonCollider/code/MyWorkspace/run/sims/muGun_3events.slcio
+      /global/cfs/cdirs/atlas/sellgren/MuonCollider/code/MyWorkspace/run/sims/muGun_1event.slcio
     </parameter>
     <!-- Limit the number of processed records (run+evt): -->
     <parameter name="MaxRecordNumber" value="-1" />
@@ -203,7 +203,7 @@
     <parameter name="Particle2TrackRelationName" type="string" lcioOutType="LCRelation">MCParticle_SiTracks</parameter>
   </processor>
 
-  <processor name="MyTrackPerf" type="TrackPerfHistProc_original">
+  <processor name="MyTrackPerf" type="TrackPerfHistProc">
     <!-- add verbosity tag-->
     <parameter name="Verbosity" options="DEBUG0-9,MESSAGE0-9,WARNING0-9,ERROR0-9,SILENT">DEBUG9 </parameter>
     <!--Name of the MCParticle collection-->
@@ -225,6 +225,7 @@
   <processor name="MyTrackPerf_notracks" type="TrackPerfHistProc">
     <!-- add verbosity tag-->
     <parameter name="Verbosity" options="DEBUG0-9,MESSAGE0-9,WARNING0-9,ERROR0-9,SILENT">DEBUG9 </parameter>
+    <!-- <parameter name="TrackingOn" type="bool" value="false" /> -->
     <!--Name of the MCParticle collection-->
     <parameter name="MCParticleCollection" type="string" lcioInType="MCParticle">MCParticle</parameter>
     <!--Name of the Track collection-->
@@ -232,7 +233,7 @@
     <!--Relations-->
     <!-- <parameter name="MCTrackRelationCollection" type="string" lcioInType="LCRelation">MCParticle_SiTracks</parameter> -->
     <!-- Include Tracking collections from the digitizers. First 6 are TrackerHits, last is LCRelation-->
-    <parameter name="VBTrackerHitsCollection" type="string" lcioInType="TrackerHitPlane">VBTrackerHits_DL </parameter>
+    <parameter name="VBTrackerHitsCollection" type="string" lcioInType="TrackerHitPlane">VBTrackerHits </parameter>
     <parameter name="IBTrackerHitsCollection" type="string" lcioInType="TrackerHitPlane">IBTrackerHits </parameter>
     <parameter name="OBTrackerHitsCollection" type="string" lcioInType="TrackerHitPlane">OBTrackerHits </parameter>
     <parameter name="VETrackerHitsCollection" type="string" lcioInType="TrackerHitPlane">VETrackerHits </parameter>
@@ -269,6 +270,95 @@
   <!-- ======================================================================================================== -->
 
   <group name="Overlay">
+  <parameter name="MCParticleCollectionName" type="string">MCParticle </parameter>
+  <!--The output MC Particle Collection Name for the physics event-->
+  <parameter name="MCPhysicsParticleCollectionName" type="string"> MCPhysicsParticle </parameter>
+  <!--Time difference between bunches in the bunch train in ns-->
+  <parameter name="Delta_t" type="float" value="1"/>
+  <!--Number of bunches in a bunch train-->
+  <parameter name="NBunchtrain" type="int" value="1"/>
+  <parameter name="MergeMCParticles" type="bool" value="false"/> 
+  <parameter name="AllowReusingBackgroundFiles" type="bool" value="true"/>
+  <parameter name="StartBackgroundFileIndex" type="int" value="0"/>
+  <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">WARNING </parameter>
+
+  <parameter name="Collection_IntegrationTimes" type="StringVec" >
+    VertexBarrelCollection -0.18 0.24
+    VertexEndcapCollection -0.18 0.24
+
+    InnerTrackerBarrelCollection -0.36 0.48
+    InnerTrackerEndcapCollection -0.36 0.48
+
+    OuterTrackerBarrelCollection -0.36 0.48
+    OuterTrackerEndcapCollection -0.36 0.48
+
+    ECalBarrelCollection -0.25 10.
+    ECalEndcapCollection -0.25 10.
+    ECalPlugCollection   -0.25 10.
+
+    HCalBarrelCollection -0.25 10.
+    HCalEndcapCollection -0.25 10.
+    HCalRingCollection   -0.25 10.
+
+    YokeBarrelCollection -0.25 10.
+    YokeEndcapCollection -0.25 10.
+
+  </parameter>
+  <!--Number of the Bunch crossing of the physics event-->
+  <parameter name="PhysicsBX" type="int" value="1"/>
+  <!--Draw random number of Events to overlay from Poisson distribution with  mean value NumberBackground-->
+  <parameter name="Poisson_random_NOverlay" type="bool" value="false"/>
+  <!--Place the physics event at an random position in the train - overrides PhysicsBX-->
+  <parameter name="RandomBx" type="bool" value="false"/>
+  <!--[mm/ns] (float) - default 5.0e-2 (5cm/us)-->
+  <parameter name="TPCDriftvelocity" type="float" value="0.05"/>
+  <parameter name="BackgroundFileNames" type="StringVec"> </parameter>
+
+  <processor name="OverlayNone" type="OverlayTimingGeneric">
+    <parameter name="BackgroundFileNames" type="StringVec"> /dev/null</parameter>
+    <parameter name="NBunchtrain" type="int" value="0"/>
+    <parameter name="NumberBackground" type="float" value="0."/>
+  </processor>
+
+  <processor name="OverlayFull" type="OverlayTimingGeneric">
+    <parameter name="BackgroundFileNames" type="StringVec">
+      /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT/sim_mumu-1e3x500-26m-lowth-excl_seed0000_allHits.slcio
+      /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT/sim_mumu-1e3x500-26m-lowth-excl_seed0001_allHits.slcio
+      /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT/sim_mumu-1e3x500-26m-lowth-excl_seed0002_allHits.slcio
+      /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT/sim_mumu-1e3x500-26m-lowth-excl_seed0003_allHits.slcio
+      /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT/sim_mumu-1e3x500-26m-lowth-excl_seed0004_allHits.slcio
+      /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT/sim_mumu-1e3x500-26m-lowth-excl_seed0005_allHits.slcio
+    </parameter>
+    <parameter name="NumberBackground" type="float" value="1" />
+    <parameter name="StartBackgroundFileIndex" type="int" value="-1"/>
+  </processor>
+
+  <processor name="OverlayTrimmed" type="OverlayTimingGeneric">
+    <parameter name="BackgroundFileNames" type="StringVec">
+      bib_trimmed.slcio
+    </parameter>
+    <parameter name="NumberBackground" type="float" value="1" />
+  </processor>
+
+  <processor name="OverlayTest" type="OverlayTimingGeneric">
+    <parameter name="BackgroundFileNames" type="StringVec">
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mumi.000.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mumi.001.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mumi.002.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mumi.003.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mumi.004.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mupl.000.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mupl.001.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mupl.002.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mupl.003.slcio
+      /cvmfs/muoncollider.cern.ch/datasets/bib/MuColl_v1/example/mupl.004.slcio
+    </parameter>
+    <parameter name="NumberBackground" type="float" value="100" />
+  </processor>
+
+</group>
+
+  <group name="Overlay_old">
     <parameter name="MCParticleCollectionName" type="string">MCParticle </parameter>
     <!--The output MC Particle Collection Name for the physics event-->
     <parameter name="MCPhysicsParticleCollectionName" type="string"> MCPhysicsParticles </parameter>
@@ -279,9 +369,9 @@
     <!--Whether MCParticle collections should be merged (slow with BIB) -->
     <parameter name="MergeMCParticles" type="bool" value="false"/>
     <!--Lower time limit for collections with a single value -->
-    <parameter name="IntegrationTimeMin" type="float" value="-0.36"/>
+    <parameter name="IntegrationTimeMin" type="float" value="-2.0"/>
 
-    <parameter name="Collection_IntegrationTimes" type="StringVec" >
+    <!-- <parameter name="Collection_IntegrationTimes" type="StringVec" >
       VertexBarrelCollection        -0.18 0.24
       VertexEndcapCollection        -0.18 0.24
 
@@ -298,8 +388,12 @@
       HCalEndcapCollection          10.
 
       YokeBarrelCollection          10.
-      YokeEndcapCollection          10.
+      YokeEndcapCollection          10. 
+      </parameter> -->
 
+    <parameter name="Collection_IntegrationTimes" type="StringVec" >
+      VertexBarrelCollection        15.0
+      VertexEndcapCollection        15.0
     </parameter>
     <!--Number of the Bunch crossing of the physics event-->
     <parameter name="PhysicsBX" type="int" value="1"/>
@@ -311,13 +405,13 @@
     <parameter name="TPCDriftvelocity" type="float" value="0.05"/>
     <parameter name="BackgroundFileNames" type="StringVec"> </parameter>
 
-    <processor name="OverlayFalse" type="OverlayTimingGeneric">
+    <processor name="OverlayFalse_old" type="OverlayTimingGeneric">
       <parameter name="BackgroundFileNames" type="StringVec"> /dev/null</parameter>
       <parameter name="NBunchtrain" type="int" value="0"/>
       <parameter name="NumberBackground" type="float" value="0."/>
     </processor>
 
-    <processor name="OverlayBIB" type="OverlayTimingGeneric">
+    <processor name="OverlayBIB_old" type="OverlayTimingGeneric">
       <parameter name="BackgroundFileNames" type="StringVec">
         /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT_merged/sim-1e3x500-26m-lowth-excl_c00.slcio
         /data/bibs/MuCollv1_25ns_nEkin150MeV_QGSPBERT_merged/sim-1e3x500-26m-lowth-excl_c01.slcio
@@ -325,9 +419,9 @@
         /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT_merged/sim-1e3x500-26m-lowth-excl_c03.slcio
         /data/bib/MuCollv1_25ns_nEkin150MeV_QGSPBERT_merged/sim-1e3x500-26m-lowth-excl_c04.slcio   
       </parameter>
-      <parameter name="Delta_t" type="float" value="15.0" />
+      <parameter name="Delta_t" type="float" value="1" />
       <parameter name="StartBackgroundFileIndex" type="int" value="0"/>
-      <parameter name="AllowReusingBackgroundFiles" type="bool" value="false" />
+      <parameter name="AllowReusingBackgroundFiles" type="bool" value="true" />
       <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT">DEBUG0 </parameter>
       <parameter name="NBunchtrain" type="int" value="1" />
       <parameter name="NumberBackground" type="float" value="1499" />
@@ -362,7 +456,7 @@
     <parameter name="DigitizeTime" type="int"> 1 </parameter>
     <parameter name="TimeDigitizeNumBits" type="int"> 10 </parameter>
     <parameter name="TimeDigitizeBinning" type="int"> 0 </parameter>
-    <parameter name="TimeMaximum" type="float"> 15.0 </parameter>
+    <parameter name="TimeMaximum" type="float"> 0.09 </parameter>
     <parameter name="TimeSmearingSigma" type="float"> 0.05 </parameter>
     <parameter name="ElectronicEffects" type="int"> 1 </parameter>
     <parameter name="ElectronicEffects" type="int"> 1 </parameter>
@@ -835,7 +929,7 @@
 
   <processor name="Output_REC" type="LCIOOutputProcessor">
     <!--   standard output: full reconstruction keep all collections -->
-    <parameter name="LCIOOutputFile" type="string"> output_15nstimingoverlay_notrackperfnotracking_realdigi_3events1499bib.slcio </parameter>
+    <parameter name="LCIOOutputFile" type="string"> output_1e_withtracking_nofilter_9pstiming_newbib.slcio </parameter>
     <parameter name="FullSubsetCollections" type="StringVec"> EfficientMCParticles InefficientMCParticles </parameter>
     <parameter name="LCIOWriteMode" type="string" value="WRITE_NEW"/>
     <!-- <parameter name="SplitFileSizekB" type="int">996147 </parameter> -->
@@ -846,8 +940,6 @@
     </parameter>
     <parameter name="KeepCollectionNames" type="StringVec">  </parameter>
   </processor>
-
-
 
 
 </marlin>

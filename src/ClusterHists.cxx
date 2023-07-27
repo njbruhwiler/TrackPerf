@@ -11,7 +11,7 @@ using namespace TrackPerf;
 
 ClusterHists::ClusterHists()
 {
-  h_size_theta    = new TH2F("cluster_size_vs_theta" , ";Cluster #theta; Cluster size" , 100, 0,  3.14,  20,  -0.5,  10.5  );
+  h_size_theta    = new TH2F("cluster_size_vs_theta" , ";Cluster #theta; Cluster size" , 100, 0,  3.14,  10,  -0.5,  10.5  );
   h_cluster_pos   = new TH2F("cluster_position"      , ";z; r"                         , 100, -500, 500, 100, 0, 200);
   h_cluster_pos_0 = new TH2F("cluster_position_0"    , ";z; r"                         , 100, -500, 500, 100, 0, 200);
   h_cluster_pos_1 = new TH2F("cluster_position_1"    , ";z; r"                         , 100, -500, 500, 100, 0, 200);
