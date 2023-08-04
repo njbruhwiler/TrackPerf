@@ -65,6 +65,8 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
   UTIL::CellIDDecoder<lcio::TrackerHit> decoder(_encoderString);
   uint32_t systemID = decoder(trkhit)["system"];
   uint32_t layerID = decoder(trkhit)["layer"];
+  // shift layer by 0.5 to resolve binning issue
+  double layerID_adjusted = layerID + 0.5;
 
 
 
@@ -84,5 +86,5 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
     h_cluster_pos_3->Fill(z,r);
     }   
 
-  hits_by_layer->Fill(layerID);
+  hits_by_layer->Fill(layerID_adjusted);
 }

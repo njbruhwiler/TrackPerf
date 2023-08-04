@@ -134,9 +134,13 @@ void TrackPerfHistProc::init()
   tree->mkdir("../unmt"); tree->cd("../unmt");
   _unmtTruths=std::make_shared<TrackPerf::TruthHists>();
 
-  tree->mkdir("../clusters" ); tree->cd("../clusters" );
+  tree->mkdir("../clusters_vb" ); tree->cd("../clusters_vb" );
   _uncertainties=std::make_shared<TrackPerf::TrackerHitResoHists>();
-  _clusters=std::make_shared<TrackPerf::ClusterHists>();
+  _clusters_vb=std::make_shared<TrackPerf::ClusterHists>();
+
+  tree->mkdir("../clusters_ib" ); tree->cd("../clusters_ib" );
+  _uncertainties=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _clusters_ib=std::make_shared<TrackPerf::ClusterHists>();
 
 }
 
@@ -300,11 +304,12 @@ void TrackPerfHistProc::processEventTrackerHits( LCEvent * evt)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(vbtrkhitCol->getElementAt(i));
       h_trackerhit_timing -> Fill(trkhit->getTime());
-      _clusters->fill(trkhit);}
+      _clusters_vb->fill(trkhit);}
   for(int i=0; i<ibtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(ibtrkhitCol->getElementAt(i));
-      h_trackerhit_timing -> Fill(trkhit->getTime());}      
+      h_trackerhit_timing -> Fill(trkhit->getTime());
+      _clusters_ib->fill(trkhit);}      
   for(int i=0; i<obtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(obtrkhitCol->getElementAt(i));
