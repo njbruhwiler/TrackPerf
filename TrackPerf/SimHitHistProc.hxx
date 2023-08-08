@@ -55,32 +55,45 @@ class SimHitHistProc : public marlin::Processor
     std::string _obsimhitColName {};
     std::string _oesimhitColName {};
 
+    //! Tracker hit collections
+    std::string _vbtrkhitColName {};
+    std::string _ibtrkhitColName {};
+    std::string _obtrkhitColName {};
+    std::string _vetrkhitColName {};
+    std::string _ietrkhitColName {};
+    std::string _oetrkhitColName {};
+
     // Histograms
     TH1* h_x;
     TH1* h_y;
     TH1* h_z;
     TH1* h_r;
+    TH1* h_t;
     TH2* h_z_r;
     TH2* h_x_y;
 
     TH1* h_x_vx;  
     TH1* h_y_vx;  
     TH1* h_z_vx;  
-    TH1* h_r_vx;  
+    TH1* h_r_vx;
+    TH1* h_t_vx;
     TH2* h_z_r_vx;
     TH2* h_x_y_vx;
+    TH1* h_t_tracker_vxb;
 
     TH1* h_x_it;  
     TH1* h_y_it;  
     TH1* h_z_it;  
-    TH1* h_r_it;  
+    TH1* h_r_it;
+    TH1* h_t_it;  
     TH2* h_z_r_it;
     TH2* h_x_y_it;
 
     TH1* h_x_ot;  
     TH1* h_y_ot;  
     TH1* h_z_ot;  
-    TH1* h_r_ot;  
+    TH1* h_r_ot;
+    TH1* h_t_ot;  
     TH2* h_z_r_ot;
     TH2* h_x_y_ot;
 };

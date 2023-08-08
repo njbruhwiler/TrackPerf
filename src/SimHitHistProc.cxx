@@ -21,8 +21,8 @@ SimHitHistProc::SimHitHistProc() : Processor("SimHitHistProc")
 {
   // modify processor description
   _description = "SimHitHistProc creates histograms mapping the location of Sim Tracker Hits." ;
-
   // register steering params: name, description, class-variable, default value
+  // Sim Hits 
   registerInputCollection( LCIO::SIMTRACKERHIT,
 			   "VBSimHitsCollection" , 
 			   "Name of vertex barrel sim tracker hits collection",
@@ -64,6 +64,49 @@ SimHitHistProc::SimHitHistProc() : Processor("SimHitHistProc")
 			   _oesimhitColName,
 			   _oesimhitColName
 			   );  
+
+  // Tracker Hits
+  registerInputCollection( LCIO::TRACKERHIT,
+			   "VBTrackerHitsCollection" , 
+			   "Name of vertex barrel tracker hits collection",
+			   _vbtrkhitColName,
+			   _vbtrkhitColName
+			   );     
+
+  registerInputCollection( LCIO::TRACKERHIT,
+			   "IBTrackerHitsCollection" , 
+			   "Name of inner barrel tracker hits collection",
+			   _ibtrkhitColName,
+			   _ibtrkhitColName
+			   );  
+
+  registerInputCollection( LCIO::TRACKERHIT,
+			   "OBTrackerHitsCollection" , 
+			   "Name of outer barrel tracker hits collection",
+			   _obtrkhitColName,
+			   _obtrkhitColName
+			   );  
+
+  registerInputCollection( LCIO::TRACKERHIT,
+			   "VETrackerHitsCollection" , 
+			   "Name of vertex endcap tracker hits collection",
+			   _vetrkhitColName,
+			   _vetrkhitColName
+			   );  
+
+  registerInputCollection( LCIO::TRACKERHIT,
+			   "IETrackerHitsCollection" , 
+			   "Name of inner endcap tracker hits collection",
+			   _ietrkhitColName,
+			   _ietrkhitColName
+			   );     
+
+  registerInputCollection( LCIO::TRACKERHIT,
+			   "OETrackerHitsCollection" , 
+			   "Name of outer endcap tracker hits collection",
+			   _oetrkhitColName,
+			   _oetrkhitColName
+			   );  
 }
 
 void SimHitHistProc::init()
@@ -86,6 +129,7 @@ void SimHitHistProc::init()
   h_y   = new TH1F("y  " , ";y   ; Num Hits" , numbins_all, -rmax_all, rmax_all);
   h_z   = new TH1F("z  " , ";z   ; Num Hits" , numbins_all,  zmin_all, zmax_all);
   h_r   = new TH1F("r  " , ";r   ; Num Hits" , numbins_all,  rmin_all, rmax_all);
+  h_t   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
   h_z_r = new TH2F("z_r" , ";z_r ; r"        , numbins_all,  zmin_all, zmax_all, numbins_all, rmin_all, rmax_all);
   h_x_y = new TH2F("x_y" , ";x_y ; r"        , numbins_all, -rmax_all, rmax_all, numbins_all, -rmax_all, rmax_all);
 
@@ -100,8 +144,10 @@ void SimHitHistProc::init()
   h_y_vx   = new TH1F("y_vx  " , ";y   ; Num Hits" , numbins_vx, -rmax_vx, rmax_vx);
   h_z_vx   = new TH1F("z_vx  " , ";z   ; Num Hits" , numbins_vx,  zmin_vx, zmax_vx);
   h_r_vx   = new TH1F("r_vx  " , ";r   ; Num Hits" , numbins_vx,  rmin_vx, rmax_vx);
+  h_t_vx   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
   h_z_r_vx = new TH2F("z_r_vx" , ";z_r ; r"        , numbins_vx,  zmin_vx, zmax_vx, numbins_vx, rmin_vx, rmax_vx);
   h_x_y_vx = new TH2F("x_y_vx" , ";x_y ; r"        , numbins_vx, -rmax_vx, rmax_vx, numbins_vx, -rmax_vx, rmax_vx);
+  h_t_tracker_vxb = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
 
   // IT histograms
   tree->mkdir("../IT"); tree->cd("../IT");
@@ -114,10 +160,11 @@ void SimHitHistProc::init()
   h_y_it   = new TH1F("y_vx  " , ";y   ; Num Hits" , numbins_IT, -rmax_IT, rmax_IT);
   h_z_it   = new TH1F("z_vx  " , ";z   ; Num Hits" , numbins_IT,  zmin_IT, zmax_IT);
   h_r_it   = new TH1F("r_vx  " , ";r   ; Num Hits" , numbins_IT,  rmin_IT, rmax_IT);
+  h_t_it   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
   h_z_r_it = new TH2F("z_r_vx" , ";z_r ; r"        , numbins_IT,  zmin_IT, zmax_IT, numbins_IT, rmin_IT, rmax_IT);
   h_x_y_it = new TH2F("x_y_vx" , ";x_y ; r"        , numbins_IT, -rmax_IT, rmax_IT, numbins_IT, -rmax_IT, rmax_IT);
 
-  // IT histograms
+  // OT histograms
   tree->mkdir("../OT"); tree->cd("../OT");
   int numbins_OT = 500;
   int rmin_OT = 800;
@@ -128,10 +175,10 @@ void SimHitHistProc::init()
   h_y_ot   = new TH1F("y_vx  " , ";y   ; Num Hits" , numbins_OT, -rmax_OT, rmax_OT);
   h_z_ot   = new TH1F("z_vx  " , ";z   ; Num Hits" , numbins_OT,  zmin_OT, zmax_OT);
   h_r_ot   = new TH1F("r_vx  " , ";r   ; Num Hits" , numbins_OT,  rmin_OT, rmax_OT);
+  h_t_ot   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
   h_z_r_ot = new TH2F("z_r_vx" , ";z_r ; r"        , numbins_OT,  zmin_OT, zmax_OT, numbins_OT, rmin_OT, rmax_OT);
   h_x_y_ot = new TH2F("x_y_vx" , ";x_y ; r"        , numbins_OT, -rmax_OT, rmax_OT, numbins_OT, -rmax_OT, rmax_OT);
-
-}
+  }
 
 void SimHitHistProc::processRunHeader( LCRunHeader* /*run*/)
 { } 
@@ -171,6 +218,20 @@ void SimHitHistProc::processEvent (LCEvent * evt)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(oesimhitCol->getElementAt(i));
       SimHitHistProc::fill(simhit, "outer");}
+
+  LCCollection* vbtrkhitCol  =evt->getCollection(_vbtrkhitColName);
+  LCCollection* ibtrkhitCol  =evt->getCollection(_ibtrkhitColName);
+  LCCollection* obtrkhitCol  =evt->getCollection(_obtrkhitColName);
+  LCCollection* vetrkhitCol  =evt->getCollection(_vetrkhitColName);
+  LCCollection* ietrkhitCol  =evt->getCollection(_ietrkhitColName);
+  LCCollection* oetrkhitCol  =evt->getCollection(_oetrkhitColName);
+
+  for(int i=0; i<vbtrkhitCol->getNumberOfElements(); ++i)
+    {
+      const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(vbtrkhitCol->getElementAt(i));
+      float t = trkhit->getTime();
+      h_t_tracker_vxb->Fill(t);
+      }
 }
 
 void SimHitHistProc::check( LCEvent * /*evt*/ )
@@ -187,13 +248,15 @@ void SimHitHistProc::fill(const EVENT::SimTrackerHit* simhit, const std::string 
   float y = simhit->getPosition()[1];
   float z = simhit->getPosition()[2];
   float r = sqrt(pow(x,2)+pow(y,2));
-  streamlog_out(DEBUG9) << "Sim Hit Parameters: x=" << x << ", y=" << y << ", z=" << z << ", r=" << r << std::endl;
+  float t = simhit->getTime();
+  streamlog_out(DEBUG9) << "Sim Hit Parameters: x=" << x << ", y=" << y << ", z=" << z << ", r=" << r << ", t=" << t << std::endl;
 
   // Fill histograms with all hits
   h_x->Fill(x);  
   h_y->Fill(y);  
   h_z->Fill(z);  
-  h_r->Fill(r);  
+  h_r->Fill(r);
+  h_t->Fill(t);
   h_z_r->Fill(z,r);
   h_x_y->Fill(x,y);
 
@@ -202,7 +265,8 @@ void SimHitHistProc::fill(const EVENT::SimTrackerHit* simhit, const std::string 
     h_x_vx->Fill(x);  
     h_y_vx->Fill(y);  
     h_z_vx->Fill(z);  
-    h_r_vx->Fill(r);  
+    h_r_vx->Fill(r); 
+    h_t_vx->Fill(t); 
     h_z_r_vx->Fill(z,r);
     h_x_y_vx->Fill(x,y);
   }
@@ -211,7 +275,8 @@ void SimHitHistProc::fill(const EVENT::SimTrackerHit* simhit, const std::string 
     h_x_it->Fill(x);  
     h_y_it->Fill(y);  
     h_z_it->Fill(z);  
-    h_r_it->Fill(r);  
+    h_r_it->Fill(r);
+    h_t_it->Fill(t);  
     h_z_r_it->Fill(z,r);
     h_x_y_it->Fill(x,y);
   }
@@ -220,11 +285,10 @@ void SimHitHistProc::fill(const EVENT::SimTrackerHit* simhit, const std::string 
     h_x_ot->Fill(x);  
     h_y_ot->Fill(y);  
     h_z_ot->Fill(z);  
-    h_r_ot->Fill(r);  
+    h_r_ot->Fill(r);
+    h_t_ot->Fill(t);  
     h_z_r_ot->Fill(z,r);
     h_x_y_ot->Fill(x,y);
   }
-  
-
 }
 
