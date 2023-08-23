@@ -283,6 +283,7 @@ void TrackPerfHistProc::processEventTrackerHits( LCEvent * evt)
 
   for(int i=0; i<VBRelationCollection->getNumberOfElements(); ++i)
     {
+      streamlog_out(DEBUG3) << "Events in VB Relation Collection: " << VBRelationCollection->getNumberOfElements() << std::endl;
       EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(VBRelationCollection->getElementAt(i));
       EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
       EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
@@ -300,6 +301,7 @@ void TrackPerfHistProc::processEventTrackerHits( LCEvent * evt)
       _uncertainties->fill(trkhit,simtrkhit,trkhitplane);
     }
 
+  streamlog_out(DEBUG3) << "Num Events in VB Hit Collection: " << vbtrkhitCol->getNumberOfElements() << std::endl;
   for(int i=0; i<vbtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(vbtrkhitCol->getElementAt(i));

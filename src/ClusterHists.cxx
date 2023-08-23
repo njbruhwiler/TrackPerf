@@ -18,10 +18,16 @@ ClusterHists::ClusterHists()
   h_cluster_pos_2 = new TH2F("cluster_position_2"    , ";z; r"                         , 100, -500, 500, 100, 0, 200);
   h_cluster_pos_3 = new TH2F("cluster_position_3"    , ";z; r"                         , 100, -500, 500, 100, 0, 200);
   hits_by_layer   = new TH1F("numhits_by_layer"      , ";Layer Index; Number of Clusters",8,0,8);
+  h_theta         = new TH1F("theta"                 , ";Theta;Number of Clusters"       ,100,0,3.15);
+  h_edep_0deg     = new TH1F("edep_0to5deg"          , ";Energy Deposited (GeV);Clusters" ,100,0,0.0005);
+  h_edep_90deg    = new TH1F("edep_89to91deg"        , ";Energy Deposited (GeV);Clusters",100,0,0.0005);
 }
 
 void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
 {
+  //Calculate energy deposited
+  float EDep = trkhit->getEDep();
+
   //Calculating theta
   float x = trkhit->getPosition()[0];
   float y = trkhit->getPosition()[1];
@@ -33,6 +39,7 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
   if(incidentTheta<0)
     incidentTheta += M_PI;
   streamlog_out(DEBUG9) << "the value of theta is " << incidentTheta << std::endl;
+
 
   //Calculating cluster size
   const lcio::LCObjectVec &rawHits = trkhit->getRawHits(); 
@@ -68,11 +75,22 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
   // shift layer by 0.5 to resolve binning issue
   double layerID_adjusted = layerID + 0.5;
 
-
-
+  // Fill for all hits
   h_size_theta->Fill(incidentTheta, cluster_size);
-  
+  h_theta->Fill(incidentTheta);
   h_cluster_pos->Fill(z,r);
+  hits_by_layer->Fill(layerID_adjusted);
+
+  // Fill energy deposition histograms based on angle
+  float theta_deg = incidentTheta * (180/3.1416);
+  if(theta_deg < 5 || theta_deg > 175){
+    h_edep_0deg->Fill(EDep);
+  }
+  if(theta_deg > 89 && theta_deg < 91){
+    h_edep_90deg->Fill(EDep);
+  }
+  
+  // Fill based on which double layer region was hit
   if(layerID==0 or layerID==1){
     h_cluster_pos_0->Fill(z,r);
     }
@@ -85,6 +103,4 @@ void ClusterHists::fill(const EVENT::TrackerHit* trkhit)
   if(layerID==6 or layerID==7){
     h_cluster_pos_3->Fill(z,r);
     }   
-
-  hits_by_layer->Fill(layerID_adjusted);
 }

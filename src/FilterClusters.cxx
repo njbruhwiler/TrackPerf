@@ -94,11 +94,8 @@ void FilterClusters::processEvent( LCEvent * evt )
 
   if( InTrackerHitCollection->getTypeName() != lcio::LCIO::TRACKERHITPLANE )
     { throw EVENT::Exception( "Invalid collection type: " + InTrackerHitCollection->getTypeName() ) ; }
-    streamlog_out(DEBUG0) << "Wrong collection type for TrackerHitCollection. \n";
   if( InRelationCollection->getTypeName() != lcio::LCIO::LCRELATION )
     { throw EVENT::Exception( "Invalid collection type: " + InRelationCollection->getTypeName() ) ; }
-    streamlog_out(DEBUG0) << "Wrong collection type for InRelationCollection. \n";
-
 
   streamlog_out(DEBUG0) << "Number of Elements in VB Tracker Hits Collection: " << InTrackerHitCollection->getNumberOfElements() <<std::endl;
   // Filter
@@ -163,16 +160,12 @@ void FilterClusters::processEvent( LCEvent * evt )
             streamlog_out( DEBUG0 ) << "cluster added" << std::endl;
             OutTrackerHitCollection->addElement(trkhit); 
             OutRelationCollection->addElement(rel); }
-          else {
-            streamlog_out( DEBUG0 ) << "cluster rejected" << std::endl;
           }
-        }
         else{
           streamlog_out( DEBUG0 ) << "theta out of range or layer filtered" << std::endl;
         }
+        }
       }
-    }
-
   // Save output track collection
   evt->addCollection(OutTrackerHitCollection, _OutTrackerHitCollection); 
   evt->addCollection(OutRelationCollection, _OutRelationCollection); 

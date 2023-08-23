@@ -129,7 +129,7 @@ void SimHitHistProc::init()
   h_y   = new TH1F("y  " , ";y   ; Num Hits" , numbins_all, -rmax_all, rmax_all);
   h_z   = new TH1F("z  " , ";z   ; Num Hits" , numbins_all,  zmin_all, zmax_all);
   h_r   = new TH1F("r  " , ";r   ; Num Hits" , numbins_all,  rmin_all, rmax_all);
-  h_t   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
+  h_t   = new TH1F("t  " , "Sim Hits from VXB and ITB;t   ; Num Hits" , numbins_all,  -2, 10); // ns
   h_z_r = new TH2F("z_r" , ";z_r ; r"        , numbins_all,  zmin_all, zmax_all, numbins_all, rmin_all, rmax_all);
   h_x_y = new TH2F("x_y" , ";x_y ; r"        , numbins_all, -rmax_all, rmax_all, numbins_all, -rmax_all, rmax_all);
 
@@ -144,10 +144,10 @@ void SimHitHistProc::init()
   h_y_vx   = new TH1F("y_vx  " , ";y   ; Num Hits" , numbins_vx, -rmax_vx, rmax_vx);
   h_z_vx   = new TH1F("z_vx  " , ";z   ; Num Hits" , numbins_vx,  zmin_vx, zmax_vx);
   h_r_vx   = new TH1F("r_vx  " , ";r   ; Num Hits" , numbins_vx,  rmin_vx, rmax_vx);
-  h_t_vx   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
+  h_t_vx   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 10); // ns
   h_z_r_vx = new TH2F("z_r_vx" , ";z_r ; r"        , numbins_vx,  zmin_vx, zmax_vx, numbins_vx, rmin_vx, rmax_vx);
   h_x_y_vx = new TH2F("x_y_vx" , ";x_y ; r"        , numbins_vx, -rmax_vx, rmax_vx, numbins_vx, -rmax_vx, rmax_vx);
-  h_t_tracker_vxb = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
+  h_t_tracker_vxb = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 10); // ns
 
   // IT histograms
   tree->mkdir("../IT"); tree->cd("../IT");
@@ -160,7 +160,7 @@ void SimHitHistProc::init()
   h_y_it   = new TH1F("y_vx  " , ";y   ; Num Hits" , numbins_IT, -rmax_IT, rmax_IT);
   h_z_it   = new TH1F("z_vx  " , ";z   ; Num Hits" , numbins_IT,  zmin_IT, zmax_IT);
   h_r_it   = new TH1F("r_vx  " , ";r   ; Num Hits" , numbins_IT,  rmin_IT, rmax_IT);
-  h_t_it   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
+  h_t_it   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 10); // ns
   h_z_r_it = new TH2F("z_r_vx" , ";z_r ; r"        , numbins_IT,  zmin_IT, zmax_IT, numbins_IT, rmin_IT, rmax_IT);
   h_x_y_it = new TH2F("x_y_vx" , ";x_y ; r"        , numbins_IT, -rmax_IT, rmax_IT, numbins_IT, -rmax_IT, rmax_IT);
 
@@ -175,7 +175,7 @@ void SimHitHistProc::init()
   h_y_ot   = new TH1F("y_vx  " , ";y   ; Num Hits" , numbins_OT, -rmax_OT, rmax_OT);
   h_z_ot   = new TH1F("z_vx  " , ";z   ; Num Hits" , numbins_OT,  zmin_OT, zmax_OT);
   h_r_ot   = new TH1F("r_vx  " , ";r   ; Num Hits" , numbins_OT,  rmin_OT, rmax_OT);
-  h_t_ot   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 2); // ns
+  h_t_ot   = new TH1F("t  " , ";t   ; Num Hits" , numbins_all,  -2, 10); // ns
   h_z_r_ot = new TH2F("z_r_vx" , ";z_r ; r"        , numbins_OT,  zmin_OT, zmax_OT, numbins_OT, rmin_OT, rmax_OT);
   h_x_y_ot = new TH2F("x_y_vx" , ";x_y ; r"        , numbins_OT, -rmax_OT, rmax_OT, numbins_OT, -rmax_OT, rmax_OT);
   }
@@ -197,27 +197,27 @@ void SimHitHistProc::processEvent (LCEvent * evt)
   for(int i=0; i<vbsimhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(vbsimhitCol->getElementAt(i));
-      SimHitHistProc::fill(simhit, "vertex");}
+      SimHitHistProc::fill(simhit, "vertexbarrel");}
   for(int i=0; i<ibsimhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(ibsimhitCol->getElementAt(i));
-      SimHitHistProc::fill(simhit, "inner");}  
+      SimHitHistProc::fill(simhit, "innerbarrel");}  
   for(int i=0; i<obsimhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(obsimhitCol->getElementAt(i));
-      SimHitHistProc::fill(simhit, "outer");}
+      SimHitHistProc::fill(simhit, "outerbarrel");}
   for(int i=0; i<vesimhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(vesimhitCol->getElementAt(i));
-      SimHitHistProc::fill(simhit, "vertex");}
+      SimHitHistProc::fill(simhit, "vertexcap");}
   for(int i=0; i<iesimhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(iesimhitCol->getElementAt(i));
-      SimHitHistProc::fill(simhit, "inner");}
+      SimHitHistProc::fill(simhit, "innercap");}
   for(int i=0; i<oesimhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::SimTrackerHit *simhit=static_cast<const EVENT::SimTrackerHit*>(oesimhitCol->getElementAt(i));
-      SimHitHistProc::fill(simhit, "outer");}
+      SimHitHistProc::fill(simhit, "outercap");}
 
   LCCollection* vbtrkhitCol  =evt->getCollection(_vbtrkhitColName);
   LCCollection* ibtrkhitCol  =evt->getCollection(_ibtrkhitColName);
@@ -256,32 +256,29 @@ void SimHitHistProc::fill(const EVENT::SimTrackerHit* simhit, const std::string 
   h_y->Fill(y);  
   h_z->Fill(z);  
   h_r->Fill(r);
-  h_t->Fill(t);
   h_z_r->Fill(z,r);
   h_x_y->Fill(x,y);
 
   // Fill subdetector-specific histograms depending on input flag
-  if (flag=="vertex"){
+  if (flag=="vertexbarrel" || flag=="vertexcap"){
     h_x_vx->Fill(x);  
     h_y_vx->Fill(y);  
     h_z_vx->Fill(z);  
-    h_r_vx->Fill(r); 
-    h_t_vx->Fill(t); 
+    h_r_vx->Fill(r);  
     h_z_r_vx->Fill(z,r);
     h_x_y_vx->Fill(x,y);
   }
 
-  if (flag=="inner"){
+  if (flag=="innerbarrel" || flag=="innercap"){
     h_x_it->Fill(x);  
     h_y_it->Fill(y);  
     h_z_it->Fill(z);  
     h_r_it->Fill(r);
-    h_t_it->Fill(t);  
     h_z_r_it->Fill(z,r);
     h_x_y_it->Fill(x,y);
   }
 
-  if (flag=="outer"){
+  if (flag=="outerbarrel" || flag=="outercap"){
     h_x_ot->Fill(x);  
     h_y_ot->Fill(y);  
     h_z_ot->Fill(z);  
@@ -290,5 +287,14 @@ void SimHitHistProc::fill(const EVENT::SimTrackerHit* simhit, const std::string 
     h_z_r_ot->Fill(z,r);
     h_x_y_ot->Fill(x,y);
   }
+    // restrict vx histograms to only barrel
+    if (flag=="vertexbarrel"){
+        h_t_vx->Fill(t);
+        h_t->Fill(t);
+    }
+    if (flag=="innerbarrel"){
+        h_t_it->Fill(t); 
+        h_t->Fill(t); 
+    }
 }
 
