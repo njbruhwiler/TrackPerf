@@ -72,6 +72,8 @@ private:
 
   //! Tracker hit relation collection
   std::string _VBRelationCollection {};
+  std::string _IBRelationCollection {};
+  std::string _OBRelationCollection {};
 
   //! Determination of good vs bad match
   float _matchProb = 0.5;
@@ -87,9 +89,12 @@ private:
   std::shared_ptr<TrackPerf::TruthHists> _realTruths;
   std::shared_ptr<TrackPerf::TruthHists> _unmtTruths;
   std::shared_ptr<TrackPerf::TrackResoHists> _realReso;
-  std::shared_ptr<TrackPerf::TrackerHitResoHists> _uncertainties;
+  std::shared_ptr<TrackPerf::TrackerHitResoHists> _uncertainties_vb;
+  std::shared_ptr<TrackPerf::TrackerHitResoHists> _uncertainties_ib;
+  std::shared_ptr<TrackPerf::TrackerHitResoHists> _uncertainties_ob;
   std::shared_ptr<TrackPerf::ClusterHists> _clusters_vb;
   std::shared_ptr<TrackPerf::ClusterHists> _clusters_ib;
+  std::shared_ptr<TrackPerf::ClusterHists> _clusters_ob;
 
   TH1 * h_number_of_fakes;
   TH1 * h_number_of_tracks;

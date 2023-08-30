@@ -101,9 +101,23 @@ TrackPerfHistProc::TrackPerfHistProc()
 
   registerInputCollection( LCIO::LCRELATION,
 		     "VBRelationCollection" ,
-			   "Name of the input relation collection",
+			   "Name of the input vertex barrel relation collection",
 			   _VBRelationCollection,
 		     _VBRelationCollection
+		 	    );
+
+    registerInputCollection( LCIO::LCRELATION,
+		     "IBRelationCollection" ,
+			   "Name of the input inner tracker barrel relation collection",
+			   _IBRelationCollection,
+		     _IBRelationCollection
+		 	    );
+
+    registerInputCollection( LCIO::LCRELATION,
+		     "OBRelationCollection" ,
+			   "Name of the input outer tracker barrel relation collection",
+			   _OBRelationCollection,
+		     _OBRelationCollection
 		 	    );
 }
 
@@ -135,12 +149,16 @@ void TrackPerfHistProc::init()
   _unmtTruths=std::make_shared<TrackPerf::TruthHists>();
 
   tree->mkdir("../clusters_vb" ); tree->cd("../clusters_vb" );
-  _uncertainties=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _uncertainties_vb=std::make_shared<TrackPerf::TrackerHitResoHists>();
   _clusters_vb=std::make_shared<TrackPerf::ClusterHists>();
 
   tree->mkdir("../clusters_ib" ); tree->cd("../clusters_ib" );
-  _uncertainties=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _uncertainties_ib=std::make_shared<TrackPerf::TrackerHitResoHists>();
   _clusters_ib=std::make_shared<TrackPerf::ClusterHists>();
+
+  tree->mkdir("../clusters_ob" ); tree->cd("../clusters_ob" );
+  _uncertainties_ob=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _clusters_ob=std::make_shared<TrackPerf::ClusterHists>();
 
 }
 
@@ -280,16 +298,17 @@ void TrackPerfHistProc::processEventTrackerHits( LCEvent * evt)
   LCCollection* ietrkhitCol  =evt->getCollection(_ietrkhitColName);
   LCCollection* oetrkhitCol  =evt->getCollection(_oetrkhitColName);
   LCCollection* VBRelationCollection =evt->getCollection(_VBRelationCollection);
+  LCCollection* IBRelationCollection =evt->getCollection(_IBRelationCollection);
+  LCCollection* OBRelationCollection =evt->getCollection(_OBRelationCollection);
 
+  // get resolution histograms for vxb hits
   for(int i=0; i<VBRelationCollection->getNumberOfElements(); ++i)
     {
       streamlog_out(DEBUG3) << "Events in VB Relation Collection: " << VBRelationCollection->getNumberOfElements() << std::endl;
       EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(VBRelationCollection->getElementAt(i));
       EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
       EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
-
       IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
-
       if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
         std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
         std::cout << "- Trackhit: " << trkhit << std::endl;
@@ -297,21 +316,63 @@ void TrackPerfHistProc::processEventTrackerHits( LCEvent * evt)
         std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
         continue;
       }
-
-      _uncertainties->fill(trkhit,simtrkhit,trkhitplane);
+      _uncertainties_vb->fill(trkhit,simtrkhit,trkhitplane);
     }
 
+  // resolution hists for itb hits
+  for(int i=0; i<IBRelationCollection->getNumberOfElements(); ++i)
+    {
+      streamlog_out(DEBUG3) << "Events in IB Relation Collection: " << IBRelationCollection->getNumberOfElements() << std::endl;
+      EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(IBRelationCollection->getElementAt(i));
+      EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
+      EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
+      IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
+      if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
+        std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
+        std::cout << "- Trackhit: " << trkhit << std::endl;
+        std::cout << "- Simtrackhit: " << simtrkhit << std::endl;
+        std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
+        continue;
+      }
+      _uncertainties_ib->fill(trkhit,simtrkhit,trkhitplane);
+    }
+
+  // resolution hists for outer tracker hits
+  for(int i=0; i<OBRelationCollection->getNumberOfElements(); ++i)
+    {
+      streamlog_out(DEBUG3) << "Events in OB Relation Collection: " << OBRelationCollection->getNumberOfElements() << std::endl;
+      EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(OBRelationCollection->getElementAt(i));
+      EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
+      EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
+      IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
+      if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
+        std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
+        std::cout << "- Trackhit: " << trkhit << std::endl;
+        std::cout << "- Simtrackhit: " << simtrkhit << std::endl;
+        std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
+        continue;
+      }
+      _uncertainties_ob->fill(trkhit,simtrkhit,trkhitplane);
+    }
   streamlog_out(DEBUG3) << "Num Events in VB Hit Collection: " << vbtrkhitCol->getNumberOfElements() << std::endl;
   for(int i=0; i<vbtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(vbtrkhitCol->getElementAt(i));
       h_trackerhit_timing -> Fill(trkhit->getTime());
+      streamlog_out(DEBUG9) << "Filling VB clusters with VB track hits..." << std::endl;
       _clusters_vb->fill(trkhit);}
   for(int i=0; i<ibtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(ibtrkhitCol->getElementAt(i));
       h_trackerhit_timing -> Fill(trkhit->getTime());
-      _clusters_ib->fill(trkhit);}      
+      streamlog_out(DEBUG9) << "Filling IB clusters with IB track hits..." << std::endl;
+      _clusters_ib->fill(trkhit);}
+  for(int i=0; i<obtrkhitCol->getNumberOfElements(); ++i)
+    {
+      const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(obtrkhitCol->getElementAt(i));
+      h_trackerhit_timing -> Fill(trkhit->getTime());
+      streamlog_out(DEBUG9) << "Filling OB clusters with IB track hits..." << std::endl;
+      _clusters_ob->fill(trkhit);}            
   for(int i=0; i<obtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(obtrkhitCol->getElementAt(i));

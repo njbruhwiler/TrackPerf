@@ -38,5 +38,19 @@ namespace TrackPerf
     TH1* h_theta;
     TH1* h_edep_0deg;
     TH1* h_edep_90deg;
+    // positions
+    TH1* h_x;
+    TH1* h_y;
+    TH1* h_z;
+    TH1* h_r;
+    TH2* h_z_r;
+    TH2* h_x_y;
+    // vertex
+    TH1* h_x_vx;  
+    TH1* h_y_vx;  
+    TH1* h_z_vx;  
+    TH1* h_r_vx;
+    TH2* h_z_r_vx;
+    TH2* h_x_y_vx;
   };
 }
