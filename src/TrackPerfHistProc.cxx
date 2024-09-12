@@ -101,9 +101,23 @@ TrackPerfHistProc::TrackPerfHistProc()
 
   registerInputCollection( LCIO::LCRELATION,
 		     "VBRelationCollection" ,
-			   "Name of the input relation collection",
+			   "Name of the input vertex barrel relation collection",
 			   _VBRelationCollection,
 		     _VBRelationCollection
+		 	    );
+
+    registerInputCollection( LCIO::LCRELATION,
+		     "IBRelationCollection" ,
+			   "Name of the input inner tracker barrel relation collection",
+			   _IBRelationCollection,
+		     _IBRelationCollection
+		 	    );
+
+    registerInputCollection( LCIO::LCRELATION,
+		     "OBRelationCollection" ,
+			   "Name of the input outer tracker barrel relation collection",
+			   _OBRelationCollection,
+		     _OBRelationCollection
 		 	    );
 }
 
@@ -132,23 +146,28 @@ void TrackPerfHistProc::init()
   h_number_of_fakes = new TH1F("number_of_fakes", ";Number of fake tracks;Events", 100,  0, 300000);
   h_relation_weight_fake = new TH1F("relation_weight", ";Track-truth relation weight;Tracks;", 100, 0, 2);
   tree->mkdir("../unmt"); tree->cd("../unmt");
-  _unmtTruths=std::make_shared<TrackPerf::TruthHists>(); 
-  tree->mkdir("../clusters" ); tree->cd("../clusters" );
-  _uncertainties=std::make_shared<TrackPerf::TrackerHitResoHists>();
-  _clusters=std::make_shared<TrackPerf::ClusterHists>();
+  _unmtTruths=std::make_shared<TrackPerf::TruthHists>();
+
+  tree->mkdir("../clusters_vb" ); tree->cd("../clusters_vb" );
+  _uncertainties_vb=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _clusters_vb=std::make_shared<TrackPerf::ClusterHists>();
+
+  tree->mkdir("../clusters_ib" ); tree->cd("../clusters_ib" );
+  _uncertainties_ib=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _clusters_ib=std::make_shared<TrackPerf::ClusterHists>();
+
+  tree->mkdir("../clusters_ob" ); tree->cd("../clusters_ob" );
+  _uncertainties_ob=std::make_shared<TrackPerf::TrackerHitResoHists>();
+  _clusters_ob=std::make_shared<TrackPerf::ClusterHists>();
 
 }
 
 void TrackPerfHistProc::processRunHeader( LCRunHeader* /*run*/)
 { } 
 
-void TrackPerfHistProc::processEvent( LCEvent * evt )
+void TrackPerfHistProc::processEventTracks( LCEvent * evt)
 {
-  //
-  // Get object required collections and create lists
-  // to keep track of unsaved objects.
-
-  // MCParticles
+    // MCParticles
 
   LCCollection* mcpCol  =evt->getCollection(_mcpColName);
 
@@ -180,43 +199,96 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
       mcpSet.insert(mcp);
       _allTruths->fill(mcp);
     }
-
-  // Tracks
+    
+    // Tracks
 
   LCCollection* trkCol  =evt->getCollection(_trkColName);
-
-  if( trkCol->getTypeName() != lcio::LCIO::TRACK )
-    { throw EVENT::Exception( "Invalid collection type: " + trkCol->getTypeName() ) ; }
-
+  if( trkCol == nullptr){
+    std::cout << "Track collection pointer is a nullptr" << std::endl;
+  }
   std::set<const EVENT::Track*> trkSet;
-  for(uint32_t i=0;i<trkCol->getNumberOfElements();i++)
-    {
-      const EVENT::Track *trk=static_cast<const EVENT::Track*>(trkCol->getElementAt(i));
-      
-      float lambda=std::atan(trk->getTanLambda());
-      if(fabs(lambda)>0.8)
-      {continue;}
 
-      trkSet.insert(trk);
-      _allTracks->fill(trk);
-    }
-    h_number_of_tracks->Fill(trkSet.size());
+  if (trkCol != nullptr) {
+    if( trkCol->getTypeName() != lcio::LCIO::TRACK )
+      { throw EVENT::Exception( "Invalid collection type: " + trkCol->getTypeName() ) ; }
+    
+    for(uint32_t i=0;i<trkCol->getNumberOfElements();i++)
+      {
+        const EVENT::Track *trk=static_cast<const EVENT::Track*>(trkCol->getElementAt(i));
+        
+        float lambda=std::atan(trk->getTanLambda());
+        if(fabs(lambda)>0.8)
+        {continue;}
+
+        trkSet.insert(trk);
+        _allTracks->fill(trk);
+      }
+      h_number_of_tracks->Fill(trkSet.size());
+  }
 
   // Relations
 
   LCCollection* relCol  =evt->getCollection(_trkMatchColName);
-
-  if( relCol->getTypeName() != lcio::LCIO::LCRELATION )
-    { throw EVENT::Exception( "Invalid collection type: " + relCol->getTypeName() ) ; }
-
   std::set<const EVENT::LCRelation*> relSet;
-  for(uint32_t i=0;i<relCol->getNumberOfElements();i++)
-    {
-      const EVENT::LCRelation *rel=static_cast<const EVENT::LCRelation*>(relCol->getElementAt(i));
 
-      relSet.insert(rel);
+  if( relCol != nullptr){
+    if( relCol->getTypeName() != lcio::LCIO::LCRELATION )
+      { throw EVENT::Exception( "Invalid collection type: " + relCol->getTypeName() ) ; }
+
+
+    for(uint32_t i=0;i<relCol->getNumberOfElements();i++)
+      {
+        const EVENT::LCRelation *rel=static_cast<const EVENT::LCRelation*>(relCol->getElementAt(i));
+
+        relSet.insert(rel);
+      }
+  }
+
+  //
+  // Loop over track to MC associations to save matched objects
+  LCCollection* tr2mcCol=evt->getCollection(_trkMatchColName);
+  if( trkCol != nullptr && relCol != nullptr && tr2mcCol != nullptr){
+    if( tr2mcCol->getTypeName() != lcio::LCIO::LCRELATION )
+      { throw EVENT::Exception( "Invalid collection type: "+ tr2mcCol->getTypeName() ); }
+
+    for(int i=0; i<tr2mcCol->getNumberOfElements(); ++i)
+      {
+        const EVENT::LCRelation *rel=static_cast<const EVENT::LCRelation*>(tr2mcCol->getElementAt(i));
+        const EVENT::MCParticle *mcp=static_cast<const EVENT::MCParticle*>(rel->getFrom());
+        const EVENT::Track      *trk=static_cast<const EVENT::Track     *>(rel->getTo  ());
+
+        if(mcpSet.count(mcp)==0)
+    { continue; } // truth particle not selected
+
+        if(rel->getWeight()>_matchProb)
+    {  
+      if(trkSet.find(trk) != trkSet.end())
+      {
+        _realTracks->fill(trk);
+        _realTruths->fill(mcp);
+        _realReso  ->fill(trk,mcp);
+        h_relation_weight_real ->Fill(rel->getWeight());
+
+        mcpSet.erase(mcp);
+        trkSet.erase(trk);
+        relSet.erase(rel);
+      }
     }
+      }  
+    //
+    // Save unmatched objects
+    for(const EVENT::MCParticle* mcp : mcpSet)
+      { _unmtTruths->fill(mcp); }
+    for(const EVENT::Track* trk : trkSet)
+      { _fakeTracks->fill(trk);} 
+    for(const EVENT::LCRelation* rel : relSet)
+      { h_relation_weight_fake->Fill(rel->getWeight());}
+    h_number_of_fakes->Fill(trkSet.size());
+}
+}
 
+void TrackPerfHistProc::processEventTrackerHits( LCEvent * evt)
+{
   //Tracker hits
 
   LCCollection* vbtrkhitCol  =evt->getCollection(_vbtrkhitColName);
@@ -226,15 +298,17 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
   LCCollection* ietrkhitCol  =evt->getCollection(_ietrkhitColName);
   LCCollection* oetrkhitCol  =evt->getCollection(_oetrkhitColName);
   LCCollection* VBRelationCollection =evt->getCollection(_VBRelationCollection);
+  LCCollection* IBRelationCollection =evt->getCollection(_IBRelationCollection);
+  LCCollection* OBRelationCollection =evt->getCollection(_OBRelationCollection);
 
+  // get resolution histograms for vxb hits
   for(int i=0; i<VBRelationCollection->getNumberOfElements(); ++i)
     {
+      streamlog_out(DEBUG3) << "Events in VB Relation Collection: " << VBRelationCollection->getNumberOfElements() << std::endl;
       EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(VBRelationCollection->getElementAt(i));
       EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
       EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
-
       IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
-
       if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
         std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
         std::cout << "- Trackhit: " << trkhit << std::endl;
@@ -242,19 +316,63 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
         std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
         continue;
       }
-
-      _uncertainties->fill(trkhit,simtrkhit,trkhitplane);
+      _uncertainties_vb->fill(trkhit,simtrkhit,trkhitplane);
     }
 
+  // resolution hists for itb hits
+  for(int i=0; i<IBRelationCollection->getNumberOfElements(); ++i)
+    {
+      streamlog_out(DEBUG3) << "Events in IB Relation Collection: " << IBRelationCollection->getNumberOfElements() << std::endl;
+      EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(IBRelationCollection->getElementAt(i));
+      EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
+      EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
+      IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
+      if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
+        std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
+        std::cout << "- Trackhit: " << trkhit << std::endl;
+        std::cout << "- Simtrackhit: " << simtrkhit << std::endl;
+        std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
+        continue;
+      }
+      _uncertainties_ib->fill(trkhit,simtrkhit,trkhitplane);
+    }
+
+  // resolution hists for outer tracker hits
+  for(int i=0; i<OBRelationCollection->getNumberOfElements(); ++i)
+    {
+      streamlog_out(DEBUG3) << "Events in OB Relation Collection: " << OBRelationCollection->getNumberOfElements() << std::endl;
+      EVENT::LCRelation *rel=static_cast<EVENT::LCRelation*>(OBRelationCollection->getElementAt(i));
+      EVENT::TrackerHit *trkhit=dynamic_cast<EVENT::TrackerHit*>(rel->getFrom());
+      EVENT::SimTrackerHit *simtrkhit=dynamic_cast<EVENT::SimTrackerHit*>(rel->getTo());
+      IMPL::TrackerHitPlaneImpl *trkhitplane=dynamic_cast<IMPL::TrackerHitPlaneImpl*>(trkhit);
+      if(trkhit==nullptr or simtrkhit==nullptr or trkhitplane==nullptr){
+        std::cout << "Warning: Failed to dynamic cast to planar sensor" << std::endl;
+        std::cout << "- Trackhit: " << trkhit << std::endl;
+        std::cout << "- Simtrackhit: " << simtrkhit << std::endl;
+        std::cout << "- Trackhitplane: " << trkhitplane << std::endl;
+        continue;
+      }
+      _uncertainties_ob->fill(trkhit,simtrkhit,trkhitplane);
+    }
+  streamlog_out(DEBUG3) << "Num Events in VB Hit Collection: " << vbtrkhitCol->getNumberOfElements() << std::endl;
   for(int i=0; i<vbtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(vbtrkhitCol->getElementAt(i));
       h_trackerhit_timing -> Fill(trkhit->getTime());
-      _clusters->fill(trkhit);}
+      streamlog_out(DEBUG9) << "Filling VB clusters with VB track hits..." << std::endl;
+      _clusters_vb->fill(trkhit);}
   for(int i=0; i<ibtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(ibtrkhitCol->getElementAt(i));
-      h_trackerhit_timing -> Fill(trkhit->getTime());}      
+      h_trackerhit_timing -> Fill(trkhit->getTime());
+      streamlog_out(DEBUG9) << "Filling IB clusters with IB track hits..." << std::endl;
+      _clusters_ib->fill(trkhit);}
+  for(int i=0; i<obtrkhitCol->getNumberOfElements(); ++i)
+    {
+      const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(obtrkhitCol->getElementAt(i));
+      h_trackerhit_timing -> Fill(trkhit->getTime());
+      streamlog_out(DEBUG9) << "Filling OB clusters with IB track hits..." << std::endl;
+      _clusters_ob->fill(trkhit);}            
   for(int i=0; i<obtrkhitCol->getNumberOfElements(); ++i)
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(obtrkhitCol->getElementAt(i));
@@ -271,50 +389,25 @@ void TrackPerfHistProc::processEvent( LCEvent * evt )
     {
       const EVENT::TrackerHit *trkhit=static_cast<const EVENT::TrackerHit*>(oetrkhitCol->getElementAt(i));
       h_trackerhit_timing -> Fill(trkhit->getTime());}
+}
 
+void TrackPerfHistProc::processEvent( LCEvent * evt )
+{
 
+  // if track collection and MCTrackRel collection are empty, disable functionality that relies on tracks
+  bool trackingOn = true;
+  if( _trkColName == "" && _trkMatchColName == "") {trackingOn = false;}
   //
-  // Loop over track to MC associations to save matched objects
-  LCCollection* tr2mcCol=evt->getCollection(_trkMatchColName);
-  if( tr2mcCol->getTypeName() != lcio::LCIO::LCRELATION )
-    { throw EVENT::Exception( "Invalid collection type: "+ tr2mcCol->getTypeName() ); }
+  // Get object required collections and create lists
+  // to keep track of unsaved objects.
 
-  for(int i=0; i<tr2mcCol->getNumberOfElements(); ++i)
-    {
-      const EVENT::LCRelation *rel=static_cast<const EVENT::LCRelation*>(tr2mcCol->getElementAt(i));
-      const EVENT::MCParticle *mcp=static_cast<const EVENT::MCParticle*>(rel->getFrom());
-      const EVENT::Track      *trk=static_cast<const EVENT::Track     *>(rel->getTo  ());
+  TrackPerfHistProc::processEventTrackerHits(evt);
 
-      if(mcpSet.count(mcp)==0)
-	{ continue; } // truth particle not selected
-
-      if(rel->getWeight()>_matchProb)
-	{  
-    if(trkSet.find(trk) != trkSet.end())
-    {
-	    _realTracks->fill(trk);
-	    _realTruths->fill(mcp);
-      _realReso  ->fill(trk,mcp);
-      h_relation_weight_real ->Fill(rel->getWeight());
-
-	    mcpSet.erase(mcp);
-	    trkSet.erase(trk);
-      relSet.erase(rel);
-    }
-	}
-    }  
-
-  //
-  // Save unmatched objects
-  for(const EVENT::MCParticle* mcp : mcpSet)
-    { _unmtTruths->fill(mcp); }
-  for(const EVENT::Track* trk : trkSet)
-    { _fakeTracks->fill(trk);} 
-  for(const EVENT::LCRelation* rel : relSet)
-    { h_relation_weight_fake->Fill(rel->getWeight());}
-  h_number_of_fakes->Fill(trkSet.size());
+  if (trackingOn){
+    TrackPerfHistProc::processEventTracks(evt);
+  }
+  
 } 
-
 
 void TrackPerfHistProc::check( LCEvent * /*evt*/ )
 { }
